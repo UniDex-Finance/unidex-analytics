@@ -5,4 +5,6 @@ export const onPositionUpdated: EventHandlerFor<
   typeof TRADING_ABI,
   "PositionUpdated"
 > = async (ctx) => {
+  const { currency, fee, isLong, key, margin, price, productId, size, user } =
+    ctx.event.args;
 };
