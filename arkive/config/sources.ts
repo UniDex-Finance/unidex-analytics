@@ -1,0 +1,17 @@
+export const sources = {
+  arbitrum: {
+    "0x8FA8b6E815f47C4dAbF30D84094811eDD2B76420": 112738687n,
+  },
+  fantom: {
+    "0x24f5C53D48052A8b2F1816C02A78886965Cb2346": 64491200n,
+  },
+  optimism: {
+    "0x7D9c9B6861168b2fB180deE065f7F5dF601cd234": 105901387n,
+  },
+  zksync: {
+    "0x4A14dA2A06715c5d9306Ca0502EDd7735961149E": 6680690n,
+  },
+  base: {
+    "0x7419694a09C21FC4D75f461d348520F3E8A506F6": 2111666n,
+  },
+} as const;
