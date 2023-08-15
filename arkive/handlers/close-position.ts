@@ -54,6 +54,7 @@ export const onClosePosition: EventHandlerFor<
   if (isNewPosition) return;
 
   const data = await getData({ currency, store: ctx.store, chainId });
+
   const dayData = await getDayData({
     currency,
     store: ctx.store,
@@ -73,7 +74,8 @@ export const onClosePosition: EventHandlerFor<
     bigIntToFloat(margin + fee, UNIT_DECIMALS) === position.margin;
 
   const trade = new Trade({
-    _id: `${data.tradeCount}:${chainId}`,
+    _id: `${chainId}:${currency}:${data.tradeCount}`,
+    chainId,
     positionKey: key,
     txHash: ctx.event.transactionHash,
     productId: decodeHexString(productId),
@@ -110,7 +112,7 @@ export const onClosePosition: EventHandlerFor<
   data.cumulativeFees = data.cumulativeFees + feeFloat;
   data.cumulativeVolume = data.cumulativeVolume + sizeFloat;
   data.cumulativeMargin = data.cumulativeMargin + marginFloat;
-  data.tradeCount = data.tradeCount + 1;
+  // data.tradeCount = data.tradeCount + 1;
 
   dayData.cumulativePnl = dayData.cumulativePnl + pnlFloat;
   dayData.cumulativeFees = dayData.cumulativeFees + feeFloat;
@@ -138,7 +140,7 @@ export const onClosePosition: EventHandlerFor<
     product.openInterestShort = product.openInterestShort - sizeFloat;
   }
 
-  await trade.save();
+  trade.save();
   saveData({ store: ctx.store, data });
   saveDayData({ store: ctx.store, data: dayData });
   saveProduct({ store: ctx.store, data: product });
