@@ -2,29 +2,33 @@ import { createEntity } from "../deps.ts";
 
 export interface Data {
   _id: string;
-  cumulativeFees: string;
-  cumulativePnl: string;
-  cumulativeVolume: string;
-  cumulativeMargin: string;
+  chainId: number;
+  cumulativeFees: number;
+  cumulativePnl: number;
+  cumulativeVolume: number;
+  cumulativeMargin: number;
 
-  openInterest: string;
-  openInterestLong: string;
-  openInterestShort: string;
+  openInterest: number;
+  openInterestLong: number;
+  openInterestShort: number;
 
   positionCount: number;
   tradeCount: number;
 }
 
 export const Data = createEntity<Data>("Data", {
-  cumulativeFees: String,
-  cumulativePnl: String,
-  cumulativeVolume: String,
-  cumulativeMargin: String,
+  _id: "string",
+  chainId: "number",
 
-  openInterest: String,
-  openInterestLong: String,
-  openInterestShort: String,
+  cumulativeFees: "number",
+  cumulativePnl: "number",
+  cumulativeVolume: "number",
+  cumulativeMargin: "number",
 
-  positionCount: Number,
-  tradeCount: Number,
+  openInterest: "number",
+  openInterestLong: "number",
+  openInterestShort: "number",
+
+  positionCount: "number",
+  tradeCount: "number",
 });

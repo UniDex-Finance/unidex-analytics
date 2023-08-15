@@ -1,12 +1,16 @@
-export interface Position {
-  productId: string;
-  leverage: string;
-  price: string;
-  margin: string;
-  fee: string;
+import { createEntity } from "../deps.ts";
 
-  size: string;
-  liquidationPrice: string;
+export interface Position {
+  _id: string;
+  chainId: number;
+  productId: string;
+  leverage: number;
+  price: number;
+  margin: number;
+  fee: number;
+
+  size: number;
+  liquidationPrice: number;
 
   user: string;
   currency: string;
@@ -19,3 +23,27 @@ export interface Position {
   updatedAtTimestamp: number;
   updatedAtBlockNumber: number;
 }
+
+export const Position = createEntity<Position>("Position", {
+  _id: "string",
+  chainId: "number",
+  productId: "string",
+  leverage: "number",
+  price: "number",
+  margin: "number",
+  fee: "number",
+
+  size: "number",
+  liquidationPrice: "number",
+
+  user: "string",
+  currency: "string",
+
+  isLong: "boolean",
+
+  createdAtTimestamp: "number",
+  createdAtBlockNumber: "number",
+
+  updatedAtTimestamp: "number",
+  updatedAtBlockNumber: "number",
+});

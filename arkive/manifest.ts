@@ -1,20 +1,36 @@
-import { TRADING_ABI } from "./abis/Trading.ts";
+import { createTradingContractConfig } from "./config/contract.ts";
+import { sources } from "./config/sources.ts";
 import { Manifest } from "./deps.ts";
-import { onClosePosition } from "./handlers/close-position.ts";
-import { onPositionUpdated } from "./handlers/position-updated.ts";
+import { Data } from "./entities/data.ts";
+import { DayData } from "./entities/day-data.ts";
+import { Position } from "./entities/position.ts";
+import { Product } from "./entities/product.ts";
+import { Trade } from "./entities/trade.ts";
 
 export default new Manifest("unidex")
+  .addEntities([Data, DayData, Position, Product, Trade])
   .addChain("arbitrum", (chain) =>
     chain
-      .addContract({
-        name: "Trading",
-        abi: TRADING_ABI,
-        sources: {
-          "0x7D9c9B6861168b2fB180deE065f7F5dF601cd234": 105901387n,
-        },
-        eventHandlers: {
-          PositionUpdated: onPositionUpdated,
-          ClosePosition: onClosePosition,
-        },
-      }))
+      .addContract(createTradingContractConfig(sources.arbitrum)))
+  .addChain("optimism", (chain) =>
+    chain
+      .setOptions({ rpcUrl: "https://rpc.ankr.com/optimism" })
+      .addContract(createTradingContractConfig(sources.optimism)))
+  .addChain("fantom", (chain) =>
+    chain
+      .addContract(createTradingContractConfig(sources.fantom)))
+  .addChain(
+    "zksync",
+    (chain) =>
+      chain.setOptions({ rpcUrl: "https://mainnet.era.zksync.io" }).addContract(
+        createTradingContractConfig(sources.zksync),
+      ),
+  )
+  .addChain(
+    "base",
+    (chain) =>
+      chain.setOptions({ rpcUrl: "https://mainnet.base.org" }).addContract(
+        createTradingContractConfig(sources.base),
+      ),
+  )
   .build();

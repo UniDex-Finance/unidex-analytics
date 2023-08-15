@@ -1,3 +1,3 @@
 export interface Pool {
-  cumulativeFes: string;
+  cumulativeFes: number;
 }

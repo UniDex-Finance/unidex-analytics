@@ -2,4 +2,9 @@ export {
   createEntity,
   type EventHandlerFor,
   Manifest,
-} from "../../robo-arkiver/mod.ts";
+  Store,
+} from "https://deno.land/x/robo_arkiver@v0.4.21/mod.ts";
+export {
+  bigIntToFloat,
+  getTimestampFromBlockNumber,
+} from "https://deno.land/x/robo_arkiver@v0.4.21/utils.ts";
