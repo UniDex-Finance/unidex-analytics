@@ -1,5 +1,6 @@
 ---
 import Layout from "../layouts/Layout.astro";
+import { ChartsContainer } from "../components/ChartsContainer";
 ---
 
 <Layout title="UniDex Exchange | Analytics Dashboard">
@@ -9,5 +10,9 @@ import Layout from "../layouts/Layout.astro";
     >
       UniDex Stats
     </h1>
+
+    <div class="grid md:grid-cols-2 gap-4">
+      <ChartsContainer client:load />
+    </div>
   </main>
 </Layout>

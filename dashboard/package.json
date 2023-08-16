@@ -13,14 +13,17 @@
     "@astrojs/react": "^2.2.2",
     "@astrojs/tailwind": "^4.0.0",
     "@nanostores/react": "^0.7.1",
+    "@tanstack/query-core": "^4.32.6",
     "@tanstack/react-query": "^4.32.6",
     "@types/react": "^18.0.21",
     "@types/react-dom": "^18.0.6",
     "astro": "^2.10.4",
+    "clsx": "^2.0.0",
     "nanostores": "^0.9.3",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "recharts": "^2.7.3",
+    "tailwind-merge": "^1.14.0",
     "tailwindcss": "^3.0.24"
   },
   "devDependencies": {
