@@ -1,0 +1,3 @@
+- Create daily price entity by pulling from defillama API
+- Handle DayProduct in handlers
+- Add volumeUSD to stats

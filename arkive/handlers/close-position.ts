@@ -93,6 +93,7 @@ export const onClosePosition: EventHandlerFor<
     isLong: position.isLong,
     duration: timestamp - position.createdAtTimestamp,
     blockNumber: Number(ctx.event.blockNumber),
+    timestamp,
   });
 
   if (isFullClose) {

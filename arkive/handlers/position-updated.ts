@@ -99,6 +99,8 @@ export const onPositionUpdated: EventHandlerFor<
   product.cumulativeMargin = product.cumulativeMargin + orderMarginFloat;
 
   if (isNewPosition) {
+    position.createdAtTimestamp = timestamp;
+    position.createdAtBlockNumber = Number(ctx.event.blockNumber);
     data.positionCount = data.positionCount + 1;
     dayData.positionCount = dayData.positionCount + 1;
     product.positionCount = product.positionCount + 1;
