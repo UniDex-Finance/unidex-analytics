@@ -21,15 +21,42 @@ export const Product = createEntity<Product>("Product", {
   _id: "string",
   chainId: "number",
 
-  cumulativeFees: "number",
-  cumulativePnl: "number",
-  cumulativeVolume: "number",
-  cumulativeMargin: "number",
+  cumulativeFees: {
+    type: "number",
+    index: true,
+  },
+  cumulativePnl: {
+    type: "number",
+    index: true,
+  },
+  cumulativeVolume: {
+    type: "number",
+    index: true,
+  },
+  cumulativeMargin: {
+    type: "number",
+    index: true,
+  },
 
-  positionCount: "number",
-  tradeCount: "number",
+  positionCount: {
+    type: "number",
+    index: true,
+  },
+  tradeCount: {
+    type: "number",
+    index: true,
+  },
 
-  openInterest: "number",
-  openInterestLong: "number",
-  openInterestShort: "number",
+  openInterest: {
+    type: "number",
+    index: true,
+  },
+  openInterestLong: {
+    type: "number",
+    index: true,
+  },
+  openInterestShort: {
+    type: "number",
+    index: true,
+  },
 });
