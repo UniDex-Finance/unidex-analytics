@@ -6,7 +6,7 @@
  */
 
 export const GRAPHQL_ENDPOINT =
-  "http://data.staging.arkiver.net/robolabs/unidex/graphql" as const;
+  "https://data.staging.arkiver.net/robolabs/unidex/graphql" as const;
 
 export const buildQuery = (params: { from: number; to: number }) => {
   return {
