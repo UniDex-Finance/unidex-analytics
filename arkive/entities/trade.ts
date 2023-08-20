@@ -12,9 +12,11 @@ export interface Trade {
 
   productId: string;
   margin: number;
+  marginUsd: number;
   leverage: number;
 
   size: number;
+  sizeUsd: number;
 
   entryPrice: number;
   closePrice: number;
@@ -22,7 +24,9 @@ export interface Trade {
   isLong: boolean;
 
   fee: number;
+  feeUsd: number;
   pnl: number;
+  pnlUsd: number;
 
   wasLiquidated: boolean;
   isFullClose: boolean;
@@ -44,24 +48,70 @@ export const Trade = createEntity<Trade>("Trade", {
   currency: "string",
 
   productId: "string",
-  margin: "number",
-  leverage: "number",
+  margin: {
+    type: "number",
+    index: true,
+  },
+  marginUsd: {
+    type: "number",
+    index: true,
+  },
+  leverage: {
+    type: "number",
+    index: true,
+  },
 
-  size: "number",
+  size: {
+    type: "number",
+    index: true,
+  },
+  sizeUsd: {
+    type: "number",
+    index: true,
+  },
 
-  entryPrice: "number",
-  closePrice: "number",
+  entryPrice: {
+    type: "number",
+    index: true,
+  },
+  closePrice: {
+    type: "number",
+    index: true,
+  },
 
   isLong: "boolean",
 
-  fee: "number",
-  pnl: "number",
+  fee: {
+    type: "number",
+    index: true,
+  },
+  feeUsd: {
+    type: "number",
+    index: true,
+  },
+  pnl: {
+    type: "number",
+    index: true,
+  },
+  pnlUsd: {
+    type: "number",
+    index: true,
+  },
 
   wasLiquidated: "boolean",
   isFullClose: "boolean",
 
-  duration: "number",
+  duration: {
+    type: "number",
+    index: true,
+  },
 
-  timestamp: "number",
-  blockNumber: "number",
+  timestamp: {
+    type: "number",
+    index: true,
+  },
+  blockNumber: {
+    type: "number",
+    index: true,
+  },
 });

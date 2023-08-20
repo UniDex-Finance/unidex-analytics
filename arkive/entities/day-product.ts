@@ -1,38 +1,20 @@
 import { createEntity } from "../deps.ts";
+import { BaseData } from "./data.ts";
 
-export interface BaseDataStats {
-  cumulativeFees: number;
-  cumulativePnl: number;
-  cumulativeVolume: number;
-  cumulativeMargin: number;
+export interface DayProduct extends BaseData {
+  _id: string; // productId:currency:chainId:dayId
 
-  openInterest: number;
-  openInterestLong: number;
-  openInterestShort: number;
+  date: number;
 }
 
-export type BaseDataStatsUsd =
-  | {
-    [Key in keyof BaseDataStats as `${Key}Usd`]: BaseDataStats[Key];
-  }
-    & BaseDataStats
-  | never;
-
-export interface BaseData extends BaseDataStatsUsd {
-  chainId: number;
-
-  positionCount: number;
-  tradeCount: number;
-}
-
-export interface Data extends BaseData {
-  _id: string; // currency:chainId
-  createdAtTimestamp: number;
-}
-
-export const Data = createEntity<Data>("Data", {
+export const DayProduct = createEntity<DayProduct>("DayProduct", {
   _id: "string",
   chainId: "number",
+
+  date: {
+    type: "number",
+    index: true,
+  },
 
   cumulativeFees: {
     type: "number",
@@ -100,6 +82,4 @@ export const Data = createEntity<Data>("Data", {
     type: "number",
     index: true,
   },
-
-  createdAtTimestamp: "number",
 });

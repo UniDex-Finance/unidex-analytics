@@ -5,8 +5,12 @@ module.exports = {
 		extend: {
 			fontFamily: {
 				header: ['Bebas Neue', ...require('tailwindcss/defaultTheme').fontFamily.sans],
+				sans: ['Montserrat', ...require('tailwindcss/defaultTheme').fontFamily.sans],
 			}
 		},
 	},
 	plugins: [require('daisyui')],
+	daisyui: {
+		themes: ['black']
+	}
 }

@@ -21,9 +21,13 @@ export const getDayData = async (
           chainId: params.chainId,
           date: dayId * 86400,
           cumulativeFees: 0,
+          cumulativeFeesUsd: 0,
           cumulativePnl: 0,
+          cumulativePnlUsd: 0,
           cumulativeVolume: 0,
+          cumulativeVolumeUsd: 0,
           cumulativeMargin: 0,
+          cumulativeMarginUsd: 0,
           tradeCount: 0,
         });
 
@@ -31,14 +35,17 @@ export const getDayData = async (
           { _id: `${params.currency}:${dayId - 1}:${params.chainId}` },
         );
         if (!previousDayData) {
-          dayData.openInterest = 0;
-          dayData.openInterestLong = 0;
-          dayData.openInterestShort = 0;
+          dayData.openInterest = dayData.openInterestUsd = 0;
+          dayData.openInterestLong = dayData.openInterestLongUsd = 0;
+          dayData.openInterestShort = dayData.openInterestShortUsd = 0;
           dayData.positionCount = 0;
         } else {
           dayData.openInterest = previousDayData.openInterest;
+          dayData.openInterestUsd = previousDayData.openInterestUsd;
           dayData.openInterestLong = previousDayData.openInterestLong;
+          dayData.openInterestLongUsd = previousDayData.openInterestLongUsd;
           dayData.openInterestShort = previousDayData.openInterestShort;
+          dayData.openInterestShortUsd = previousDayData.openInterestShortUsd;
           dayData.positionCount = previousDayData.positionCount;
         }
       }
