@@ -6,23 +6,18 @@ import { DayData } from "./entities/day-data.ts";
 import { DayProduct } from "./entities/day-product.ts";
 import { Position } from "./entities/position.ts";
 import { Product } from "./entities/product.ts";
+import { TokenInfo } from "./entities/token-info.ts";
 import { Trade } from "./entities/trade.ts";
-import { updatePrice } from "./handlers/update-price.ts";
 
 export default new Manifest("unidex")
-  .addEntities([Data, DayData, Position, Product, Trade, DayProduct])
+  .addEntities([Data, DayData, Position, Product, Trade, DayProduct, TokenInfo])
   .addChain("arbitrum", (chain) =>
     chain
       .addContract(createTradingContractConfig(sources.arbitrum)))
   .addChain("optimism", (chain) =>
     chain
       .setOptions({ rpcUrl: "https://rpc.ankr.com/optimism" })
-      .addContract(createTradingContractConfig(sources.optimism))
-      .addBlockHandler({
-        blockInterval: 300,
-        startBlockHeight: "live",
-        handler: updatePrice,
-      }))
+      .addContract(createTradingContractConfig(sources.optimism)))
   .addChain("fantom", (chain) =>
     chain
       .addContract(createTradingContractConfig(sources.fantom)))

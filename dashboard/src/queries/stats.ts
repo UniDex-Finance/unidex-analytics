@@ -1,46 +1,70 @@
+/**
+ * High-Level overview:
+ * 1. Build graphQL query
+ * 2. Call endpoint with query
+ * 3. Return data
+ */
+
+export const GRAPHQL_ENDPOINT =
+  "http://data.staging.arkiver.net/robolabs/unidex/graphql" as const;
+
+export const buildQuery = (params: { from: number; to: number }) => {
+  return {
+    query: /* GraphQL */ `query ($gt: Float, $lte: Float) {
+			DayProducts(filter: {_operators: {date: {gt: $gt, lte: $lte}}}, limit: 10000) {
+				_id
+				cumulativeVolumeUsd
+			}
+			Products {
+				_id
+				cumulativeVolumeUsd
+			}
+			TokenInfos {
+				symbol
+				currency
+			}
+		}`,
+    variables: { "gt": params.from, "lte": params.to },
+  };
+};
+
 export const getStats = async () => {
-  return [
-    {
-      name: "Page A",
-      uv: 590,
-      pv: 800,
-      amt: 1400,
-      cnt: 490,
+  const to = Math.floor(Date.now() / 1000);
+  const from = to - 7 * 24 * 60 * 60;
+
+  const query = buildQuery({ from, to });
+
+  const res = await fetch(GRAPHQL_ENDPOINT, {
+    method: "POST",
+    body: JSON.stringify(query),
+    headers: {
+      "Content-Type": "application/json",
     },
-    {
-      name: "Page B",
-      uv: 868,
-      pv: 967,
-      amt: 1506,
-      cnt: 590,
-    },
-    {
-      name: "Page C",
-      uv: 1397,
-      pv: 1098,
-      amt: 989,
-      cnt: 350,
-    },
-    {
-      name: "Page D",
-      uv: 1480,
-      pv: 1200,
-      amt: 1228,
-      cnt: 480,
-    },
-    {
-      name: "Page E",
-      uv: 1520,
-      pv: 1108,
-      amt: 1100,
-      cnt: 460,
-    },
-    {
-      name: "Page F",
-      uv: 1400,
-      pv: 680,
-      amt: 1700,
-      cnt: 380,
-    },
-  ];
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch stats: ${res.statusText}`);
+  }
+
+  const { data } = (await res.json()) as StatsRaw;
+
+  return data;
+};
+
+export type StatsRaw = {
+  data: {
+    DayProducts: {
+      _id: `${string}:${string}:${string}:${string}`;
+      cumulativeVolumeUsd: number;
+      date: number;
+    }[];
+    Products: {
+      _id: `${string}:${string}:${string}`;
+      cumulativeVolumeUsd: number;
+    }[];
+    TokenInfos: {
+      symbol: string;
+      currency: string;
+    }[];
+  };
 };
