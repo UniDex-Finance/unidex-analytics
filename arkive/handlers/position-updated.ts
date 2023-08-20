@@ -157,6 +157,7 @@ export const onPositionUpdated: EventHandlerFor<
     data.positionCount = data.positionCount + 1;
     dayData.positionCount = dayData.positionCount + 1;
     product.positionCount = product.positionCount + 1;
+    dayProduct.positionCount = dayProduct.positionCount + 1;
   }
 
   data.openInterest = data.openInterest + orderSizeFloat;

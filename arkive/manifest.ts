@@ -3,13 +3,14 @@ import { sources } from "./config/sources.ts";
 import { Manifest } from "./deps.ts";
 import { Data } from "./entities/data.ts";
 import { DayData } from "./entities/day-data.ts";
+import { DayProduct } from "./entities/day-product.ts";
 import { Position } from "./entities/position.ts";
 import { Product } from "./entities/product.ts";
 import { Trade } from "./entities/trade.ts";
 import { updatePrice } from "./handlers/update-price.ts";
 
 export default new Manifest("unidex")
-  .addEntities([Data, DayData, Position, Product, Trade])
+  .addEntities([Data, DayData, Position, Product, Trade, DayProduct])
   .addChain("arbitrum", (chain) =>
     chain
       .addContract(createTradingContractConfig(sources.arbitrum)))
