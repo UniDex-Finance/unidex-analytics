@@ -12,9 +12,11 @@ export interface Trade {
 
   productId: string;
   margin: number;
+  marginUsd: number;
   leverage: number;
 
   size: number;
+  sizeUsd: number;
 
   entryPrice: number;
   closePrice: number;
@@ -22,7 +24,9 @@ export interface Trade {
   isLong: boolean;
 
   fee: number;
+  feeUsd: number;
   pnl: number;
+  pnlUsd: number;
 
   wasLiquidated: boolean;
   isFullClose: boolean;
@@ -48,12 +52,20 @@ export const Trade = createEntity<Trade>("Trade", {
     type: "number",
     index: true,
   },
+  marginUsd: {
+    type: "number",
+    index: true,
+  },
   leverage: {
     type: "number",
     index: true,
   },
 
   size: {
+    type: "number",
+    index: true,
+  },
+  sizeUsd: {
     type: "number",
     index: true,
   },
@@ -73,7 +85,15 @@ export const Trade = createEntity<Trade>("Trade", {
     type: "number",
     index: true,
   },
+  feeUsd: {
+    type: "number",
+    index: true,
+  },
   pnl: {
+    type: "number",
+    index: true,
+  },
+  pnlUsd: {
     type: "number",
     index: true,
   },

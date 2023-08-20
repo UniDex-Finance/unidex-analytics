@@ -12,7 +12,7 @@ export const getDayProduct = async (
 ) => {
   const dayId = Math.floor(params.timestamp / 86400);
   const id =
-    `${params.productId}:${params.currency}:${dayId}:${params.chainId}`;
+    `${params.productId}:${params.currency}:${params.chainId}:${dayId}`;
   const dayProduct = await params.store.retrieve(
     `product:${id}`,
     async () => {
@@ -23,28 +23,37 @@ export const getDayProduct = async (
           chainId: params.chainId,
           date: dayId * 86400,
           cumulativeFees: 0,
+          cumulativeFeesUsd: 0,
           cumulativePnl: 0,
+          cumulativePnlUsd: 0,
           cumulativeVolume: 0,
+          cumulativeVolumeUsd: 0,
           cumulativeMargin: 0,
+          cumulativeMarginUsd: 0,
           tradeCount: 0,
         });
 
         const previousDayProduct = await DayProduct.findOne(
           {
-            _id: `${params.productId}:${params.currency}:${
+            _id: `${params.productId}:${params.currency}:${params.chainId}:${
               dayId - 1
-            }:${params.chainId}`,
+            }`,
           },
         );
         if (!previousDayProduct) {
-          dayProduct.openInterest = 0;
-          dayProduct.openInterestLong = 0;
-          dayProduct.openInterestShort = 0;
+          dayProduct.openInterest = dayProduct.openInterestUsd = 0;
+          dayProduct.openInterestLong = dayProduct.openInterestLongUsd = 0;
+          dayProduct.openInterestShort = dayProduct.openInterestShortUsd = 0;
           dayProduct.positionCount = 0;
         } else {
           dayProduct.openInterest = previousDayProduct.openInterest;
+          dayProduct.openInterestUsd = previousDayProduct.openInterestUsd;
           dayProduct.openInterestLong = previousDayProduct.openInterestLong;
+          dayProduct.openInterestLongUsd =
+            previousDayProduct.openInterestLongUsd;
           dayProduct.openInterestShort = previousDayProduct.openInterestShort;
+          dayProduct.openInterestShortUsd =
+            previousDayProduct.openInterestShortUsd;
           dayProduct.positionCount = previousDayProduct.positionCount;
         }
       }

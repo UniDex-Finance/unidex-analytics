@@ -1,35 +1,28 @@
 import { createEntity } from "../deps.ts";
+import { BaseData } from "./data.ts";
 
-export interface DayData {
-  _id: string;
-  chainId: number;
+export interface DayData extends BaseData {
+  _id: string; // currency:chainId:dayId
 
   date: number;
-  cumulativeFees: number;
-  cumulativePnl: number;
-  cumulativeVolume: number;
-  cumulativeMargin: number;
-
-  openInterest: number;
-  openInterestLong: number;
-  openInterestShort: number;
-
-  positionCount: number;
-  tradeCount: number;
 }
 
 export const DayData = createEntity<DayData>("DayData", {
   _id: "string",
+  date: {
+    type: "number",
+    index: true,
+  },
   chainId: {
     type: "number",
     index: true,
   },
 
-  date: {
+  cumulativeFees: {
     type: "number",
     index: true,
   },
-  cumulativeFees: {
+  cumulativeFeesUsd: {
     type: "number",
     index: true,
   },
@@ -37,11 +30,23 @@ export const DayData = createEntity<DayData>("DayData", {
     type: "number",
     index: true,
   },
+  cumulativePnlUsd: {
+    type: "number",
+    index: true,
+  },
   cumulativeVolume: {
     type: "number",
     index: true,
   },
+  cumulativeVolumeUsd: {
+    type: "number",
+    index: true,
+  },
   cumulativeMargin: {
+    type: "number",
+    index: true,
+  },
+  cumulativeMarginUsd: {
     type: "number",
     index: true,
   },
@@ -50,11 +55,23 @@ export const DayData = createEntity<DayData>("DayData", {
     type: "number",
     index: true,
   },
+  openInterestUsd: {
+    type: "number",
+    index: true,
+  },
   openInterestLong: {
     type: "number",
     index: true,
   },
+  openInterestLongUsd: {
+    type: "number",
+    index: true,
+  },
   openInterestShort: {
+    type: "number",
+    index: true,
+  },
+  openInterestShortUsd: {
     type: "number",
     index: true,
   },
