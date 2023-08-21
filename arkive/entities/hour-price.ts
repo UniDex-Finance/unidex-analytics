@@ -10,8 +10,8 @@ export interface HourPrice {
 
 export const HourPrice = createEntity<HourPrice>("HourPrice", {
   _id: "string",
-  hourTimestamp: "number",
-  currency: "string",
-  chainId: "number",
+  hourTimestamp: { type: "number", index: true },
+  currency: { type: "string", index: true },
+  chainId: { type: "number", index: true },
   priceUsd: "number",
 });

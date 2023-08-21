@@ -108,16 +108,18 @@ const fetchTokenInfo = async (params: {
       `https://api.geckoterminal.com/api/v2/networks/${coingeckoId}/tokens/${mappedCurrency}?include=top_pools`,
     );
     if (!tokenRes.ok) {
-      console.error(tokenRes);
-      throw new Error("Failed to fetch token from coingecko");
+      throw new Error(`Failed to fetch token from coingecko: ${tokenRes}`);
     }
     const tokenParseRes = safeParse(
       coingeckoTokenSchema,
       await tokenRes.json(),
     );
     if (!tokenParseRes.success) {
-      console.error(tokenParseRes.error);
-      throw new Error("Failed to parse token from coingecko");
+      throw new Error(
+        `Failed to parse token from coingecko: ${
+          JSON.stringify(tokenParseRes.error)
+        }`,
+      );
     }
     const token = tokenParseRes.data;
     const pool = token.included.find((i) =>
@@ -159,8 +161,16 @@ export const getPrice = async (params: {
     const price = await HourPrice.findOne({ _id: id });
     if (price === null) {
       const [higher, lower] = await Promise.all([
-        HourPrice.findOne({ _id: { $gt: id } }).sort({ _id: 1 }),
-        HourPrice.findOne({ _id: { $lt: id } }).sort({ _id: -1 }),
+        HourPrice.findOne({
+          currency: params.currency,
+          chainId: params.chainId,
+          hourTimestamp: { $gt: hourTimestamp },
+        }).sort({ hourTimestamp: 1 }),
+        HourPrice.findOne({
+          currency: params.currency,
+          chainId: params.chainId,
+          hourTimestamp: { $lt: hourTimestamp },
+        }).sort({ hourTimestamp: -1 }),
       ]);
 
       if (higher === null || lower === null) return null;
