@@ -71,6 +71,13 @@ export const VolumeChart = (params: {
 
     if (params.showOthers) topGroups.unshift("Others");
 
+    const totalVolume = data.Products.reduce(
+      (acc, product) => acc + product.cumulativeVolumeUsd,
+      0
+    );
+
+    let latestTimestamp = 0;
+
     const res = data.DayProducts.reduce(
       (acc, item) => {
         const [pair, collateral, chainId, dayId] = item._id.split(":");
@@ -101,6 +108,10 @@ export const VolumeChart = (params: {
 
         acc.total += item.cumulativeVolumeUsd;
 
+        if (timestamp > latestTimestamp) {
+          latestTimestamp = timestamp;
+        }
+
         return acc;
       },
       {
@@ -113,6 +124,10 @@ export const VolumeChart = (params: {
       }
     );
 
+    console.log(res);
+
+    const latestTotal = res.data[latestTimestamp]?.Total ?? 0;
+
     // add 0 values for groups that don't have data for a given day
     const values = Object.values(res.data).map((item) => {
       for (const key of topGroups) {
@@ -120,8 +135,11 @@ export const VolumeChart = (params: {
           item[key] = 0;
         }
       }
+      item.Total = item.Total - latestTotal + totalVolume;
       return item;
     });
+
+    console.log(values);
 
     return { topGroups, data: values, allGroupKeys: [...res.allGroupKeys] };
   }, [data]);
@@ -145,7 +163,10 @@ export const VolumeChart = (params: {
         height="85%"
         className={cn({ ["invisible"]: isError || isLoading })}
       >
-        <ComposedChart data={transformedData.data} margin={{ left: 20 }}>
+        <ComposedChart
+          data={transformedData.data}
+          margin={{ left: 20, right: 10 }}
+        >
           <CartesianGrid stroke="#f5f5f5" />
           <XAxis
             dataKey="timestamp"
@@ -153,27 +174,53 @@ export const VolumeChart = (params: {
             type="number"
             domain={([dataMin, dataMax]) => [dataMin - 43200, dataMax + 43200]}
             tickFormatter={(value) =>
-              new Date(value * 1000).toLocaleDateString()
+              new Date(value * 1000).toLocaleDateString("en-UK", {
+                dateStyle: "short",
+              })
             }
             tickMargin={10}
           />
           <YAxis
             tickFormatter={(value) => currencyFormatter.format(value)}
             tickMargin={10}
+            yAxisId="left"
+            domain={([dataMin, dataMax]) => {
+              const range = dataMax - dataMin;
+              return [dataMin, dataMax + range * 0.1];
+            }}
+          />
+          <YAxis
+            tickFormatter={(value) => currencyFormatter.format(value)}
+            yAxisId="right"
+            orientation="right"
+            domain={([dataMin, dataMax]) => {
+              const range = dataMax - dataMin;
+              return [dataMin, dataMax + range * 0.1];
+            }}
+            label={{ value: "Total", angle: -90, position: "insideRight" }}
           />
           <Tooltip
             formatter={(value) => currencyFormatter.format(Number(value))}
+            labelFormatter={(value) =>
+              new Date(value * 1000).toLocaleDateString()
+            }
           />
           {/* <Legend /> */}
-          <Line type="monotone" dataKey="Total" stroke="#8884d8" />
           {transformedData.topGroups.map((group, i) => (
             <Bar
               dataKey={group}
               key={group}
               stackId={"a"}
               fill={generateColor(i)}
+              yAxisId="left"
             />
           ))}
+          <Line
+            type="monotone"
+            dataKey="Total"
+            stroke="#8884d8"
+            yAxisId="right"
+          />
         </ComposedChart>
       </ResponsiveContainer>
     </ChartWrapper>
