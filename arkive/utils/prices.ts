@@ -161,6 +161,9 @@ export const getPrice = async (params: {
   const price = await params.store.retrieve(`price:${id}`, async () => {
     const price = await HourPrice.findOne({ _id: id });
     if (price === null) {
+      const nowHour = (Date.now() - (Date.now() % 3600000)) / 1000;
+      if (hourTimestamp >= nowHour) return null; // Fetch prices from coingecko once fully synced
+
       const [higher, lower] = await Promise.all([
         HourPrice.findOne({
           currency: params.currency,
