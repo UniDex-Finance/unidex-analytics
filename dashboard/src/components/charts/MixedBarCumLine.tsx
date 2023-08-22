@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import {
   ResponsiveContainer,
   Line,
@@ -7,39 +6,61 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-  LineChart,
   Bar,
+  ReferenceLine,
 } from "recharts";
-import { useMemo } from "react";
-import { getStats } from "../../queries/stats";
-import { cn } from "../../utils/cn";
+import { useEffect, useMemo, useState } from "react";
 import { ChartWrapper } from "./Wrapper";
 import { generateColor } from "../../utils/colors";
 import { getChainName } from "../../utils/chains";
+import type { StatsRaw } from "../../queries/stats";
 
-export const VolumeChart = (params: {
-  groupBy: "pair" | "collateral" | "chain";
-  topGroupLimit?: number;
-  showOthers?: boolean;
+export const MixedBarCumLineChart = (params: {
+  data: StatsRaw["data"];
+  valueKey: Exclude<
+    keyof StatsRaw["data"]["DayProducts"][number],
+    "_id" | "date"
+  >;
 }) => {
-  const { isLoading, isError, data } = useQuery({
-    queryKey: ["stats"],
-    queryFn: getStats,
-  });
+  const { data } = params;
+
+  const [groupBy, setGroupBy] = useState<"pair" | "collateral" | "chain">(
+    "pair"
+  );
+  const [showOthers, setShowOthers] = useState<boolean>(true);
+  const [topGroupLimit, setTopGroupLimit] = useState<number | undefined>(8);
+
+  useEffect(() => {
+    switch (groupBy) {
+      case "pair":
+        setTopGroupLimit(8);
+        setShowOthers(true);
+        break;
+      case "collateral":
+        setTopGroupLimit(4);
+        setShowOthers(true);
+        break;
+      case "chain":
+        setTopGroupLimit(undefined);
+        setShowOthers(false);
+        break;
+    }
+  }, [groupBy]);
 
   const transformedData = useMemo(() => {
-    if (!data) return { topGroups: [], data: [], allGroupKeys: [] };
-
     const getGroupKey = (splitId: [string, string, string]) => {
       const [pair, collateral, chainId] = splitId;
-      return params.groupBy === "pair"
+      return groupBy === "pair"
         ? pair
-        : params.groupBy === "collateral"
-        ? data.TokenInfos.find((token) => token.currency === collateral)!.symbol
+        : groupBy === "collateral"
+        ? data.TokenInfos.find(
+            (token) =>
+              token.currency === collateral && token.chainId === Number(chainId)
+          )!.symbol
         : getChainName(chainId);
     };
 
-    const topGroups = params.showOthers
+    const topGroups = showOthers
       ? Object.entries(
           data.Products.reduce((acc, product) => {
             const splitId = product._id.split(":");
@@ -47,15 +68,15 @@ export const VolumeChart = (params: {
             const groupKey = getGroupKey(splitId as [string, string, string]);
 
             if (!acc[groupKey]) {
-              acc[groupKey] = product.cumulativeVolumeUsd;
+              acc[groupKey] = product[params.valueKey];
             } else {
-              acc[groupKey] += product.cumulativeVolumeUsd;
+              acc[groupKey] += product[params.valueKey];
             }
             return acc;
           }, {} as Record<string, number>)
         )
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, params.topGroupLimit ?? 8)
+          .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+          .slice(0, topGroupLimit)
           .map(([groupKey]) => groupKey)
       : [
           ...new Set(
@@ -69,10 +90,10 @@ export const VolumeChart = (params: {
           ),
         ];
 
-    if (params.showOthers) topGroups.unshift("Others");
+    if (showOthers) topGroups.push("Others");
 
     const totalVolume = data.Products.reduce(
-      (acc, product) => acc + product.cumulativeVolumeUsd,
+      (acc, product) => acc + product[params.valueKey],
       0
     );
 
@@ -94,19 +115,24 @@ export const VolumeChart = (params: {
         if (!acc.data[timestamp]) {
           acc.data[timestamp] = {
             timestamp,
-            [mappedGroupKey]: item.cumulativeVolumeUsd,
-            Total: item.cumulativeVolumeUsd + acc.total,
+            [mappedGroupKey]: item[params.valueKey],
+            Total: item[params.valueKey] + acc.total,
           };
+          for (const key of topGroups) {
+            if (key !== mappedGroupKey) {
+              acc.data[timestamp][key] = 0;
+            }
+          }
         } else {
           if (!acc.data[timestamp][mappedGroupKey]) {
-            acc.data[timestamp][mappedGroupKey] = item.cumulativeVolumeUsd;
+            acc.data[timestamp][mappedGroupKey] = item[params.valueKey];
           } else {
-            acc.data[timestamp][mappedGroupKey] += item.cumulativeVolumeUsd;
+            acc.data[timestamp][mappedGroupKey] += item[params.valueKey];
           }
-          acc.data[timestamp].Total += item.cumulativeVolumeUsd;
+          acc.data[timestamp].Total += item[params.valueKey];
         }
 
-        acc.total += item.cumulativeVolumeUsd;
+        acc.total += item[params.valueKey];
 
         if (timestamp > latestTimestamp) {
           latestTimestamp = timestamp;
@@ -124,25 +150,16 @@ export const VolumeChart = (params: {
       }
     );
 
-    console.log(res);
-
     const latestTotal = res.data[latestTimestamp]?.Total ?? 0;
 
-    // add 0 values for groups that don't have data for a given day
+    // add previous total to latest total
     const values = Object.values(res.data).map((item) => {
-      for (const key of topGroups) {
-        if (!item[key]) {
-          item[key] = 0;
-        }
-      }
       item.Total = item.Total - latestTotal + totalVolume;
       return item;
     });
 
-    console.log(values);
-
     return { topGroups, data: values, allGroupKeys: [...res.allGroupKeys] };
-  }, [data]);
+  }, [data, groupBy, showOthers, topGroupLimit]);
 
   const currencyFormatter = new Intl.NumberFormat("en-US", {
     currency: "USD",
@@ -150,31 +167,57 @@ export const VolumeChart = (params: {
     style: "currency",
   });
 
+  const getSubject = () => {
+    switch (params.valueKey) {
+      case "cumulativeVolumeUsd":
+        return "Volume";
+      case "cumulativeFeesUsd":
+        return "Fees";
+      case "openInterestLongUsd":
+        return "Long Open Interest";
+      case "openInterestShortUsd":
+        return "Short Open Interest";
+      case "cumulativeMarginUsd":
+        return "Margin";
+      case "cumulativePnlUsd":
+        return "Traders' PnL";
+      default:
+        return params.valueKey;
+    }
+  };
+
   return (
-    <ChartWrapper
-      title={`Volume by ${params.groupBy
-        .slice(0, 1)
-        .toUpperCase()}${params.groupBy.slice(1)}`}
-      isError={isError}
-      isLoading={isLoading}
-    >
-      <ResponsiveContainer
-        width="100%"
-        height="85%"
-        className={cn({ ["invisible"]: isError || isLoading })}
-      >
+    <ChartWrapper>
+      <h2 className="w-full text-center text-xl flex items-center justify-center gap-2">
+        {`${getSubject()} by `}
+        <select
+          className="select select-ghost w-full max-w-[8rem]"
+          value={groupBy}
+          onChange={(e) =>
+            setGroupBy(e.target.value as "pair" | "collateral" | "chain")
+          }
+        >
+          <option value="pair">Pair</option>
+          <option value="collateral">Collateral</option>
+          <option value="chain">Chain</option>
+        </select>
+      </h2>
+      <ResponsiveContainer width="100%" height="85%">
         <ComposedChart
           data={transformedData.data}
           margin={{ left: 20, right: 10 }}
+          syncId={"date"}
+          width={600}
+          height={400}
+          stackOffset="sign"
         >
-          <CartesianGrid stroke="#f5f5f5" />
           <XAxis
             dataKey="timestamp"
             scale="time"
             type="number"
             domain={([dataMin, dataMax]) => [dataMin - 43200, dataMax + 43200]}
             tickFormatter={(value) =>
-              new Date(value * 1000).toLocaleDateString("en-UK", {
+              new Date(value * 1000).toLocaleDateString("en-US", {
                 dateStyle: "short",
               })
             }
@@ -184,10 +227,6 @@ export const VolumeChart = (params: {
             tickFormatter={(value) => currencyFormatter.format(value)}
             tickMargin={10}
             yAxisId="left"
-            domain={([dataMin, dataMax]) => {
-              const range = dataMax - dataMin;
-              return [dataMin, dataMax + range * 0.1];
-            }}
           />
           <YAxis
             tickFormatter={(value) => currencyFormatter.format(value)}
@@ -195,17 +234,24 @@ export const VolumeChart = (params: {
             orientation="right"
             domain={([dataMin, dataMax]) => {
               const range = dataMax - dataMin;
-              return [dataMin, dataMax + range * 0.1];
+              return [dataMin, dataMax + range * 0.05];
             }}
             label={{ value: "Total", angle: -90, position: "insideRight" }}
           />
           <Tooltip
             formatter={(value) => currencyFormatter.format(Number(value))}
             labelFormatter={(value) =>
-              new Date(value * 1000).toLocaleDateString()
+              new Date(value * 1000).toLocaleDateString("en-US", {
+                dateStyle: "short",
+              })
             }
+            itemSorter={(item) => -(item.value as number)}
+            itemStyle={{ fontSize: "0.8rem" }}
+            contentStyle={{
+              backgroundColor: "rgba(20,20,20,0.9)",
+              color: "white",
+            }}
           />
-          {/* <Legend /> */}
           {transformedData.topGroups.map((group, i) => (
             <Bar
               dataKey={group}
@@ -221,6 +267,7 @@ export const VolumeChart = (params: {
             stroke="#8884d8"
             yAxisId="right"
           />
+          <ReferenceLine y={0} yAxisId={"left"} stroke="#666" />
         </ComposedChart>
       </ResponsiveContainer>
     </ChartWrapper>

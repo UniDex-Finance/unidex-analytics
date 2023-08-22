@@ -22,14 +22,30 @@ export const onPositionUpdated: EventHandlerFor<
   const { currency, fee, isLong, key, margin, price, productId, size, user } =
     ctx.event.args;
 
-  const [chainId, timestampMs] = await Promise.all([
-    getChainId(ctx),
-    getTimestampFromBlockNumber({
-      blockNumber: ctx.event.blockNumber,
-      client: ctx.client,
-      store: ctx.store,
-    }),
-  ]);
+  const getInfo = async () =>
+    await Promise.all([
+      getChainId(ctx),
+      getTimestampFromBlockNumber({
+        blockNumber: ctx.event.blockNumber,
+        client: ctx.client,
+        store: ctx.store,
+      }),
+    ]);
+
+  let chainId;
+  let timestampMs;
+
+  while (true) {
+    try {
+      const [chainId_, timestampMs_] = await getInfo();
+      chainId = chainId_;
+      timestampMs = timestampMs_;
+      break;
+    } catch (e) {
+      ctx.logger.error(e);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
 
   const timestamp = timestampMs / 1000;
 

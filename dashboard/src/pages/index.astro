@@ -6,13 +6,11 @@ import { ChartsContainer } from "../components/ChartsContainer";
 <Layout title="UniDex Exchange | Analytics Dashboard">
   <main>
     <h1
-      class="w-full text-center text-6xl md:text-7xl py-10 md:py-16 font-header tracking-widest"
+      class="w-full text-center text-6xl md:text-7xl py-10 font-header tracking-widest"
     >
       UniDex Stats
     </h1>
 
-    <div class="grid md:grid-cols-2 gap-4">
-      <ChartsContainer client:load />
-    </div>
+    <ChartsContainer client:load />
   </main>
 </Layout>

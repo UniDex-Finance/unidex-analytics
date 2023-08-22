@@ -5,6 +5,7 @@ import {
 import { TokenInfo } from "../entities/token-info.ts";
 import {
   array,
+  logger,
   number,
   object,
   safeParse,
@@ -53,7 +54,7 @@ export const fetchPricesFromCoingecko = async (params: {
       }`;
     const priceRes = await fetch(url);
     if (!priceRes.ok) {
-      console.error(priceRes);
+      logger("arkiver").error(priceRes);
       throw new Error("Failed to fetch prices from coingecko");
     }
     const priceDataParseRes = safeParse(
@@ -61,7 +62,7 @@ export const fetchPricesFromCoingecko = async (params: {
       await priceRes.json(),
     );
     if (!priceDataParseRes.success) {
-      console.error(priceDataParseRes.error);
+      logger("arkiver").error(priceDataParseRes.error);
       throw new Error("Failed to parse prices from coingecko");
     }
     const priceData = priceDataParseRes.data;
@@ -197,15 +198,19 @@ export const getPrice = async (params: {
 
   if (prices.length === 0) return null;
 
-  await HourPrice.insertMany(prices.map((price) =>
-    new HourPrice({
-      _id: `${params.currency}:${params.chainId}:${price.timestamp}`,
-      chainId: params.chainId,
-      currency: params.currency,
-      hourTimestamp: price.timestamp,
-      priceUsd: price.price,
-    })
-  ));
+  try {
+    await HourPrice.insertMany(prices.map((price) =>
+      new HourPrice({
+        _id: `${params.currency}:${params.chainId}:${price.timestamp}`,
+        chainId: params.chainId,
+        currency: params.currency,
+        hourTimestamp: price.timestamp,
+        priceUsd: price.price,
+      })
+    ));
+  } catch (e) {
+    logger("arkiver").error(e);
+  }
 
   let newPrice = prices.find((price) => price.timestamp === hourTimestamp)
     ?.price;

@@ -11,17 +11,34 @@ export const GRAPHQL_ENDPOINT =
 export const buildQuery = (params: { from: number; to: number }) => {
   return {
     query: /* GraphQL */ `query ($gt: Float, $lte: Float) {
-			DayProducts(filter: {_operators: {date: {gt: $gt, lte: $lte}}}, limit: 10000) {
+			DayProducts(filter: {_operators: {date: {gt: $gt, lte: $lte}}}, limit: 0) {
 				_id
 				cumulativeVolumeUsd
+				cumulativeFeesUsd
+				openInterestLongUsd
+				openInterestShortUsd
+				openInterestUsd
+				cumulativeMarginUsd
+				cumulativePnlUsd
+				tradeCount
+				positionCount
 			}
-			Products {
+			Products(limit: 0) {
 				_id
 				cumulativeVolumeUsd
+				cumulativeFeesUsd
+				openInterestLongUsd
+				openInterestShortUsd
+				openInterestUsd
+				cumulativeMarginUsd
+				cumulativePnlUsd
+				tradeCount
+				positionCount
 			}
 			TokenInfos {
 				symbol
 				currency
+				chainId
 			}
 		}`,
     variables: { "gt": params.from, "lte": params.to },
@@ -30,7 +47,7 @@ export const buildQuery = (params: { from: number; to: number }) => {
 
 export const getStats = async () => {
   const to = Math.floor(Date.now() / 1000);
-  const from = to - 7 * 24 * 60 * 60;
+  const from = to - 30 * 24 * 60 * 60;
 
   const query = buildQuery({ from, to });
 
@@ -56,15 +73,32 @@ export type StatsRaw = {
     DayProducts: {
       _id: `${string}:${string}:${string}:${string}`;
       cumulativeVolumeUsd: number;
+      cumulativeFeesUsd: number;
+      openInterestLongUsd: number;
+      openInterestShortUsd: number;
+      openInterestUsd: number;
+      cumulativeMarginUsd: number;
+      cumulativePnlUsd: number;
+      tradeCount: number;
+      positionCount: number;
       date: number;
     }[];
     Products: {
       _id: `${string}:${string}:${string}`;
       cumulativeVolumeUsd: number;
+      cumulativeFeesUsd: number;
+      openInterestLongUsd: number;
+      openInterestShortUsd: number;
+      cumulativeMarginUsd: number;
+      cumulativePnlUsd: number;
+      tradeCount: number;
+      positionCount: number;
+      openInterestUsd: number;
     }[];
     TokenInfos: {
       symbol: string;
       currency: string;
+      chainId: number;
     }[];
   };
 };
