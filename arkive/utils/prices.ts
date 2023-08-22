@@ -54,7 +54,7 @@ export const fetchPricesFromCoingecko = async (params: {
       }`;
     const priceRes = await fetch(url);
     if (!priceRes.ok) {
-      logger("arkiver").error(priceRes);
+      logger("arkiver").error(`${priceRes.status}: ${priceRes.statusText}`);
       throw new Error("Failed to fetch prices from coingecko");
     }
     const priceDataParseRes = safeParse(
@@ -62,7 +62,7 @@ export const fetchPricesFromCoingecko = async (params: {
       await priceRes.json(),
     );
     if (!priceDataParseRes.success) {
-      logger("arkiver").error(priceDataParseRes.error);
+      logger("arkiver").error(JSON.stringify(priceDataParseRes.error, null, 2));
       throw new Error("Failed to parse prices from coingecko");
     }
     const priceData = priceDataParseRes.data;
@@ -80,6 +80,7 @@ export const fetchPricesFromCoingecko = async (params: {
 
   while (params.to > params.from) {
     const averagePrices = await fetchPricesBefore(params.to);
+    if (averagePrices.length === 0) break;
     prices.push(...averagePrices);
     params.to = averagePrices[averagePrices.length - 1].timestamp;
   }
@@ -162,7 +163,6 @@ export const getPrice = async (params: {
     const price = await HourPrice.findOne({ _id: id });
     if (price === null) {
       const nowHour = (Date.now() - (Date.now() % 3600000)) / 1000;
-      if (hourTimestamp >= nowHour) return null; // Fetch prices from coingecko once fully synced
 
       const [higher, lower] = await Promise.all([
         HourPrice.findOne({
@@ -177,12 +177,26 @@ export const getPrice = async (params: {
         }).sort({ hourTimestamp: -1 }),
       ]);
 
-      if (higher === null || lower === null) return null;
+      if (!higher && !lower) return null;
+
+      if (!higher || !lower) {
+        return higher ? higher.priceUsd : lower!.priceUsd;
+      }
 
       const closest = Math.abs(higher.hourTimestamp - hourTimestamp) <
           Math.abs(lower.hourTimestamp - hourTimestamp)
         ? higher
         : lower;
+
+      if (hourTimestamp >= nowHour) {
+        const closestDiff = Math.abs(closest.hourTimestamp - hourTimestamp);
+        if (closestDiff > 3600) {
+          logger("arkiver").info(
+            `Price not found for ${params.currency} on ${params.chainId} at ${hourTimestamp} and ${hourTimestamp} is more than ${nowHour}`,
+          );
+          return null;
+        }
+      } // Fetch prices from coingecko once fully synced
 
       return closest.priceUsd;
     }
@@ -199,7 +213,12 @@ export const getPrice = async (params: {
     to: (Date.now() / 1000) - ((Date.now() / 1000) % 3600),
   });
 
-  if (prices.length === 0) return null;
+  if (prices.length === 0) {
+    logger("arkiver").error(
+      `No prices returned for ${params.currency} on ${params.chainId} from coingecko at ${hourTimestamp}`,
+    );
+    return null;
+  }
 
   try {
     await HourPrice.insertMany(prices.map((price) =>
