@@ -1,7 +1,6 @@
 import {
   ResponsiveContainer,
   Line,
-  CartesianGrid,
   ComposedChart,
   Tooltip,
   XAxis,
@@ -9,72 +8,166 @@ import {
   Bar,
   ReferenceLine,
 } from "recharts";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChartWrapper } from "./Wrapper";
 import { generateColor } from "../../utils/colors";
 import { getChainName } from "../../utils/chains";
 import type { StatsRaw } from "../../queries/stats";
+import { GroupSelector } from "../GroupSelector";
+import { Filter } from "../Filter";
+import { Separator } from "../ui/separator";
 
-export const MixedBarCumLineChart = (params: {
+const currencyFormatter = new Intl.NumberFormat("en-US", {
+  currency: "USD",
+  notation: "compact",
+  style: "currency",
+});
+
+export interface MixedBarCumLineChartProps {
   data: StatsRaw["data"];
   valueKey: Exclude<
     keyof StatsRaw["data"]["DayProducts"][number],
     "_id" | "date"
   >;
-}) => {
-  const { data } = params;
+  defaultPairs?: string[];
+  defaultCollaterals?: string[];
+  defaultChains?: string[];
+}
 
+export function MixedBarCumLineChart({
+  data,
+  valueKey,
+  defaultPairs = [],
+  defaultChains = [],
+  defaultCollaterals = [],
+}: MixedBarCumLineChartProps) {
   const [groupBy, setGroupBy] = useState<"pair" | "collateral" | "chain">(
     "pair"
   );
-  const [showOthers, setShowOthers] = useState<boolean>(true);
-  const [topGroupLimit, setTopGroupLimit] = useState<number | undefined>(8);
+  const [pairFilter, setPairFilter] = useState<string[]>(defaultPairs);
+  const [collateralFilter, setCollateralFilter] =
+    useState<string[]>(defaultCollaterals);
+  const [chainFilter, setChainFilter] = useState<string[]>(defaultChains);
 
-  useEffect(() => {
+  const getCollateralSymbol = (params: {
+    address: string;
+    tokenInfos: StatsRaw["data"]["TokenInfos"];
+    chainId: number;
+  }) => {
+    const { address, tokenInfos, chainId } = params;
+    return tokenInfos.find(
+      (token) => token.currency === address && token.chainId === chainId
+    )?.symbol;
+  };
+
+  const isFiltered = (splitId: [string, string, string]) => {
+    const [pair, collateral, chainId] = splitId;
+    const collateralSymbol =
+      getCollateralSymbol({
+        address: collateral,
+        chainId: Number(chainId),
+        tokenInfos: data.TokenInfos,
+      }) ?? "Unknown";
+    return (
+      (pairFilter.length > 0 && !pairFilter.includes(pair)) ||
+      (collateralFilter.length > 0 &&
+        !collateralFilter.includes(collateralSymbol)) ||
+      (chainFilter.length > 0 && !chainFilter.includes(chainId))
+    );
+  };
+
+  const getGroupKey = (splitId: [string, string, string]) => {
     switch (groupBy) {
       case "pair":
-        setTopGroupLimit(8);
-        setShowOthers(true);
-        break;
+        return splitId[0];
       case "collateral":
-        setTopGroupLimit(4);
-        setShowOthers(true);
-        break;
+        return (
+          getCollateralSymbol({
+            address: splitId[1],
+            tokenInfos: data.TokenInfos,
+            chainId: Number(splitId[2]),
+          }) ?? "Unknown"
+        );
       case "chain":
-        setTopGroupLimit(undefined);
-        setShowOthers(false);
-        break;
+        return getChainName(splitId[2]);
     }
-  }, [groupBy]);
+  };
+
+  const getSubject = () => {
+    switch (valueKey) {
+      case "cumulativeVolumeUsd":
+        return "Volume";
+      case "cumulativeFeesUsd":
+        return "Fees";
+      case "openInterestLongUsd":
+        return "Long Open Interest";
+      case "openInterestShortUsd":
+        return "Short Open Interest";
+      case "cumulativeMarginUsd":
+        return "Margin";
+      case "cumulativePnlUsd":
+        return "Traders' PnL";
+      default:
+        return valueKey;
+    }
+  };
+
+  const { allChains, allCollaterals, allPairs } = useMemo(() => {
+    let allPairs = new Set<string>();
+    let allCollaterals = new Set<string>();
+    let allChains = new Set<string>();
+
+    for (const product of data.Products) {
+      const [pair, collateral, chainId] = product._id.split(":");
+
+      allPairs.add(pair);
+      allCollaterals.add(
+        getCollateralSymbol({
+          address: collateral,
+          chainId: Number(chainId),
+          tokenInfos: data.TokenInfos,
+        }) ?? "Unknown"
+      );
+      allChains.add(chainId);
+    }
+
+    return {
+      allPairs: [...allPairs],
+      allCollaterals: [...allCollaterals],
+      allChains: [...allChains],
+    };
+  }, [data, valueKey]);
 
   const transformedData = useMemo(() => {
-    const getGroupKey = (splitId: [string, string, string]) => {
-      const [pair, collateral, chainId] = splitId;
-      return groupBy === "pair"
-        ? pair
-        : groupBy === "collateral"
-        ? data.TokenInfos.find(
-            (token) =>
-              token.currency === collateral && token.chainId === Number(chainId)
-          )!.symbol
-        : getChainName(chainId);
-    };
+    const showOthers = groupBy === "chain" ? false : true;
+    const topGroupLimit =
+      groupBy === "chain" ? undefined : groupBy === "pair" ? 8 : 4;
+
+    let totalValue = 0;
+    const topGroupsMap: Record<string, number> = {};
+
+    for (const product of data.Products) {
+      const splitId = product._id.split(":");
+
+      if (isFiltered(splitId as [string, string, string])) {
+        continue;
+      }
+
+      totalValue += product[valueKey];
+
+      if (!showOthers) continue;
+
+      const groupKey = getGroupKey(splitId as [string, string, string]);
+
+      if (!topGroupsMap[groupKey]) {
+        topGroupsMap[groupKey] = product[valueKey];
+      } else {
+        topGroupsMap[groupKey] += product[valueKey];
+      }
+    }
 
     const topGroups = showOthers
-      ? Object.entries(
-          data.Products.reduce((acc, product) => {
-            const splitId = product._id.split(":");
-
-            const groupKey = getGroupKey(splitId as [string, string, string]);
-
-            if (!acc[groupKey]) {
-              acc[groupKey] = product[params.valueKey];
-            } else {
-              acc[groupKey] += product[params.valueKey];
-            }
-            return acc;
-          }, {} as Record<string, number>)
-        )
+      ? Object.entries(topGroupsMap)
           .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
           .slice(0, topGroupLimit)
           .map(([groupKey]) => groupKey)
@@ -92,20 +185,17 @@ export const MixedBarCumLineChart = (params: {
 
     if (showOthers) topGroups.push("Others");
 
-    const totalVolume = data.Products.reduce(
-      (acc, product) => acc + product[params.valueKey],
-      0
-    );
-
     let latestTimestamp = 0;
 
     const res = data.DayProducts.reduce(
       (acc, item) => {
         const [pair, collateral, chainId, dayId] = item._id.split(":");
 
-        const groupKey = getGroupKey([pair, collateral, chainId]);
+        if (isFiltered([pair, collateral, chainId])) {
+          return acc;
+        }
 
-        acc.allGroupKeys.add(groupKey);
+        const groupKey = getGroupKey([pair, collateral, chainId]);
 
         const timestamp = Number(dayId) * 86400;
 
@@ -115,8 +205,8 @@ export const MixedBarCumLineChart = (params: {
         if (!acc.data[timestamp]) {
           acc.data[timestamp] = {
             timestamp,
-            [mappedGroupKey]: item[params.valueKey],
-            Total: item[params.valueKey] + acc.total,
+            [mappedGroupKey]: item[valueKey],
+            Cumulative: item[valueKey] + acc.cumulative,
           };
           for (const key of topGroups) {
             if (key !== mappedGroupKey) {
@@ -125,14 +215,14 @@ export const MixedBarCumLineChart = (params: {
           }
         } else {
           if (!acc.data[timestamp][mappedGroupKey]) {
-            acc.data[timestamp][mappedGroupKey] = item[params.valueKey];
+            acc.data[timestamp][mappedGroupKey] = item[valueKey];
           } else {
-            acc.data[timestamp][mappedGroupKey] += item[params.valueKey];
+            acc.data[timestamp][mappedGroupKey] += item[valueKey];
           }
-          acc.data[timestamp].Total += item[params.valueKey];
+          acc.data[timestamp].Cumulative += item[valueKey];
         }
 
-        acc.total += item[params.valueKey];
+        acc.cumulative += item[valueKey];
 
         if (timestamp > latestTimestamp) {
           latestTimestamp = timestamp;
@@ -141,67 +231,64 @@ export const MixedBarCumLineChart = (params: {
         return acc;
       },
       {
-        allGroupKeys: new Set<string>(),
         data: {} as Record<
           number,
           Record<string, number> & { timestamp: number }
         >, // timestamp -> { [groupVolume]: number, timestamp: number }
-        total: 0,
+        cumulative: 0,
       }
     );
 
-    const latestTotal = res.data[latestTimestamp]?.Total ?? 0;
+    const latestTotal = res.data[latestTimestamp]?.Cumulative ?? 0;
 
-    // add previous total to latest total
+    // add previous cumulative to latest cumulative
     const values = Object.values(res.data).map((item) => {
-      item.Total = item.Total - latestTotal + totalVolume;
+      item.Cumulative = item.Cumulative - latestTotal + totalValue;
       return item;
     });
 
-    return { topGroups, data: values, allGroupKeys: [...res.allGroupKeys] };
-  }, [data, groupBy, showOthers, topGroupLimit]);
-
-  const currencyFormatter = new Intl.NumberFormat("en-US", {
-    currency: "USD",
-    notation: "compact",
-    style: "currency",
-  });
-
-  const getSubject = () => {
-    switch (params.valueKey) {
-      case "cumulativeVolumeUsd":
-        return "Volume";
-      case "cumulativeFeesUsd":
-        return "Fees";
-      case "openInterestLongUsd":
-        return "Long Open Interest";
-      case "openInterestShortUsd":
-        return "Short Open Interest";
-      case "cumulativeMarginUsd":
-        return "Margin";
-      case "cumulativePnlUsd":
-        return "Traders' PnL";
-      default:
-        return params.valueKey;
-    }
-  };
+    return { topGroups, data: values };
+  }, [data, groupBy, collateralFilter, pairFilter, chainFilter]);
 
   return (
     <ChartWrapper>
-      <h2 className="w-full text-center text-xl flex items-center justify-center gap-2">
-        {`${getSubject()} by `}
-        <select
-          className="select select-ghost w-full max-w-[8rem]"
-          value={groupBy}
-          onChange={(e) =>
-            setGroupBy(e.target.value as "pair" | "collateral" | "chain")
-          }
-        >
-          <option value="pair">Pair</option>
-          <option value="collateral">Collateral</option>
-          <option value="chain">Chain</option>
-        </select>
-      </h2>
+      <div>
+        <div className="flex items-center gap-2 px-4 pb-2 flex-wrap">
+          <h2 className="text-xl flex-1">{getSubject()}</h2>
+          <GroupSelector
+            setter={(value) => setGroupBy(value as any)}
+            value={groupBy}
+          />
+          <Filter
+            options={allPairs.map((pair) => ({
+              label: pair,
+              value: pair,
+            }))}
+            setter={setPairFilter}
+            title="Pair"
+            selectedValues={pairFilter}
+          />
+          <Filter
+            options={allCollaterals.map((collateral) => ({
+              label: collateral,
+              value: collateral,
+            }))}
+            setter={setCollateralFilter}
+            title="Collateral"
+            selectedValues={collateralFilter}
+          />
+          <Filter
+            options={allChains.map((chain) => ({
+              label: getChainName(chain),
+              value: chain,
+            }))}
+            setter={setChainFilter}
+            title="Chain"
+            selectedValues={chainFilter}
+          />
+        </div>
+        <Separator />
+      </div>
       <ResponsiveContainer width="100%" height="85%">
         <ComposedChart
           data={transformedData.data}
@@ -236,20 +323,50 @@ export const MixedBarCumLineChart = (params: {
               const range = dataMax - dataMin;
               return [dataMin, dataMax + range * 0.05];
             }}
-            label={{ value: "Total", angle: -90, position: "insideRight" }}
           />
           <Tooltip
-            formatter={(value) => currencyFormatter.format(Number(value))}
-            labelFormatter={(value) =>
-              new Date(value * 1000).toLocaleDateString("en-US", {
-                dateStyle: "short",
-              })
-            }
-            itemSorter={(item) => -(item.value as number)}
-            itemStyle={{ fontSize: "0.8rem" }}
-            contentStyle={{
-              backgroundColor: "rgba(20,20,20,0.9)",
-              color: "white",
+            content={({ active, payload, label }) => {
+              const total = payload
+                ?.filter((item) => item.name !== "Cumulative")
+                .reduce((acc, item) => acc + Number(item.value), 0);
+              return (
+                <div className="flex flex-col gap-1">
+                  <div className="text-center">
+                    {new Date(Number(label) * 1000).toLocaleDateString(
+                      "en-US",
+                      {
+                        dateStyle: "short",
+                      }
+                    )}
+                  </div>
+                  {active && payload && payload.length > 0 && (
+                    <div className="flex flex-col gap-0 text-xs rounded bg-opacity-90 bg-slate-700 px-4 py-2">
+                      {payload.reverse().map((item, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <div
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <div className="flex-1">{item.name}</div>
+                          <div>
+                            {currencyFormatter.format(Number(item.value))}
+                          </div>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-2 h-2 rounded-full"
+                          style={{ backgroundColor: "#8884d8" }}
+                        />
+                        <div className="flex-1 font-bold">Total</div>
+                        <div className="font-bold">
+                          {currencyFormatter.format(total ?? 0)}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
             }}
           />
           {transformedData.topGroups.map((group, i) => (
@@ -259,17 +376,19 @@ export const MixedBarCumLineChart = (params: {
               stackId={"a"}
               fill={generateColor(i)}
               yAxisId="left"
+              isAnimationActive={false}
             />
           ))}
           <Line
             type="monotone"
-            dataKey="Total"
+            dataKey="Cumulative"
             stroke="#8884d8"
             yAxisId="right"
+            isAnimationActive={false}
           />
           <ReferenceLine y={0} yAxisId={"left"} stroke="#666" />
         </ComposedChart>
       </ResponsiveContainer>
     </ChartWrapper>
   );
-};
+}

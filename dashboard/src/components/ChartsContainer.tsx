@@ -9,7 +9,11 @@ export const ChartsContainer = () => {
       <MixedBarCumLineChart valueKey="cumulativeVolumeUsd" data={data} />
       <MixedBarCumLineChart valueKey="cumulativeFeesUsd" data={data} />
       <MixedBarCumLineChart valueKey="cumulativeMarginUsd" data={data} />
-      <MixedBarCumLineChart valueKey="cumulativePnlUsd" data={data} />
+      <MixedBarCumLineChart
+        valueKey="cumulativePnlUsd"
+        data={data}
+        defaultChains={["42161"]}
+      />
     </div>
   );
 };
