@@ -71,7 +71,7 @@ export const getStats = async () => {
 export type StatsRaw = {
   data: {
     DayProducts: {
-      _id: `${string}:${string}:${string}:${string}`;
+      _id: string;
       cumulativeVolumeUsd: number;
       cumulativeFeesUsd: number;
       openInterestLongUsd: number;
@@ -81,10 +81,9 @@ export type StatsRaw = {
       cumulativePnlUsd: number;
       tradeCount: number;
       positionCount: number;
-      date: number;
     }[];
     Products: {
-      _id: `${string}:${string}:${string}`;
+      _id: string;
       cumulativeVolumeUsd: number;
       cumulativeFeesUsd: number;
       openInterestLongUsd: number;

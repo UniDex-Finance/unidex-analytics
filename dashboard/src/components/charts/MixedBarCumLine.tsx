@@ -16,6 +16,15 @@ import type { StatsRaw } from "../../queries/stats";
 import { GroupSelector } from "../GroupSelector";
 import { Filter } from "../Filter";
 import { Separator } from "../ui/separator";
+import { Button } from "../ui/button";
+import { Cross2Icon } from "@radix-ui/react-icons";
+import { DropdownMenu, DropdownMenuItem } from "../ui/dropdown-menu";
+import {
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const currencyFormatter = new Intl.NumberFormat("en-US", {
   currency: "USD",
@@ -24,11 +33,12 @@ const currencyFormatter = new Intl.NumberFormat("en-US", {
 });
 
 export interface MixedBarCumLineChartProps {
-  data: StatsRaw["data"];
+  data: StatsRaw["data"] | null;
   valueKey: Exclude<
     keyof StatsRaw["data"]["DayProducts"][number],
     "_id" | "date"
   >;
+  isLoading: boolean;
   defaultPairs?: string[];
   defaultCollaterals?: string[];
   defaultChains?: string[];
@@ -36,6 +46,7 @@ export interface MixedBarCumLineChartProps {
 
 export function MixedBarCumLineChart({
   data,
+  isLoading,
   valueKey,
   defaultPairs = [],
   defaultChains = [],
@@ -66,7 +77,7 @@ export function MixedBarCumLineChart({
       getCollateralSymbol({
         address: collateral,
         chainId: Number(chainId),
-        tokenInfos: data.TokenInfos,
+        tokenInfos: data?.TokenInfos ?? [],
       }) ?? "Unknown";
     return (
       (pairFilter.length > 0 && !pairFilter.includes(pair)) ||
@@ -84,7 +95,7 @@ export function MixedBarCumLineChart({
         return (
           getCollateralSymbol({
             address: splitId[1],
-            tokenInfos: data.TokenInfos,
+            tokenInfos: data?.TokenInfos ?? [],
             chainId: Number(splitId[2]),
           }) ?? "Unknown"
         );
@@ -113,6 +124,13 @@ export function MixedBarCumLineChart({
   };
 
   const { allChains, allCollaterals, allPairs } = useMemo(() => {
+    if (!data)
+      return {
+        allChains: [],
+        allCollaterals: [],
+        allPairs: [],
+      };
+
     let allPairs = new Set<string>();
     let allCollaterals = new Set<string>();
     let allChains = new Set<string>();
@@ -139,6 +157,12 @@ export function MixedBarCumLineChart({
   }, [data, valueKey]);
 
   const transformedData = useMemo(() => {
+    if (!data)
+      return {
+        topGroups: [],
+        data: [],
+      };
+
     const showOthers = groupBy === "chain" ? false : true;
     const topGroupLimit =
       groupBy === "chain" ? undefined : groupBy === "pair" ? 8 : 4;
@@ -251,7 +275,7 @@ export function MixedBarCumLineChart({
   }, [data, groupBy, collateralFilter, pairFilter, chainFilter]);
 
   return (
-    <ChartWrapper>
+    <ChartWrapper isLoading={isLoading}>
       <div>
         <div className="flex items-center gap-2 px-4 pb-2 flex-wrap">
           <h2 className="text-xl flex-1">{getSubject()}</h2>
@@ -259,33 +283,69 @@ export function MixedBarCumLineChart({
             setter={(value) => setGroupBy(value as any)}
             value={groupBy}
           />
-          <Filter
-            options={allPairs.map((pair) => ({
-              label: pair,
-              value: pair,
-            }))}
-            setter={setPairFilter}
-            title="Pair"
-            selectedValues={pairFilter}
-          />
-          <Filter
-            options={allCollaterals.map((collateral) => ({
-              label: collateral,
-              value: collateral,
-            }))}
-            setter={setCollateralFilter}
-            title="Collateral"
-            selectedValues={collateralFilter}
-          />
-          <Filter
-            options={allChains.map((chain) => ({
-              label: getChainName(chain),
-              value: chain,
-            }))}
-            setter={setChainFilter}
-            title="Chain"
-            selectedValues={chainFilter}
-          />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant={"outline"}>Filters</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuLabel>Filter By</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Filter
+                  options={allPairs.map((pair) => ({
+                    label: pair,
+                    value: pair,
+                  }))}
+                  setter={setPairFilter}
+                  title="Pair"
+                  selectedValues={pairFilter}
+                />
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Filter
+                  options={allCollaterals.map((collateral) => ({
+                    label: collateral,
+                    value: collateral,
+                  }))}
+                  setter={setCollateralFilter}
+                  title="Collateral"
+                  selectedValues={collateralFilter}
+                />
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Filter
+                  options={allChains.map((chain) => ({
+                    label: getChainName(chain),
+                    value: chain,
+                  }))}
+                  setter={setChainFilter}
+                  title="Chain"
+                  selectedValues={chainFilter}
+                />
+              </DropdownMenuItem>
+              {(pairFilter.length > 0 ||
+                collateralFilter.length > 0 ||
+                chainFilter.length > 0) && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setPairFilter([]);
+                        setCollateralFilter([]);
+                        setChainFilter([]);
+                      }}
+                      className="h-8 px-2 lg:px-3"
+                    >
+                      Reset
+                      <Cross2Icon className="ml-2 h-4 w-4" />
+                    </Button>
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
         <Separator />
       </div>

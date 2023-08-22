@@ -77,7 +77,11 @@ export function Filter({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0" align="start">
+      <PopoverContent
+        className="w-[200px] p-0"
+        align="start"
+        onFocusOutside={(e) => e.preventDefault()}
+      >
         <Command>
           <CommandInput placeholder={title} />
           <CommandList>
