@@ -17,7 +17,7 @@ export interface SelectorProps {
 export function GroupSelector({ setter, value }: SelectorProps) {
   return (
     <Select onValueChange={setter} value={value}>
-      <SelectTrigger className="w-[180px] h-8">
+      <SelectTrigger className="md:w-[180px] w-auto h-8">
         <SelectValue placeholder="Group by" />
       </SelectTrigger>
       <SelectContent>
