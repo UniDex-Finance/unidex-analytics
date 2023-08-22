@@ -285,7 +285,9 @@ export function MixedBarCumLineChart({
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant={"outline"}>Filters</Button>
+              <Button variant={"outline"} className="h-8">
+                Filters
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
               <DropdownMenuLabel>Filter By</DropdownMenuLabel>
