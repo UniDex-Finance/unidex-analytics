@@ -177,35 +177,39 @@ export const onPositionUpdated: EventHandlerFor<
   }
 
   data.openInterest = data.openInterest + orderSizeFloat;
-  data.openInterestUsd = data.openInterestUsd + orderSizeUsd;
+  data.openInterestUsd = data.openInterest * (collateralPrice || 0);
   dayData.openInterest = dayData.openInterest + orderSizeFloat;
-  dayData.openInterestUsd = dayData.openInterestUsd + orderSizeUsd;
+  dayData.openInterestUsd = dayData.openInterest * (collateralPrice || 0);
   product.openInterest = product.openInterest + orderSizeFloat;
-  product.openInterestUsd = product.openInterestUsd + orderSizeUsd;
+  product.openInterestUsd = product.openInterest * (collateralPrice || 0);
   dayProduct.openInterest = dayProduct.openInterest + orderSizeFloat;
-  dayProduct.openInterestUsd = dayProduct.openInterestUsd + orderSizeUsd;
+  dayProduct.openInterestUsd = dayProduct.openInterest * (collateralPrice || 0);
 
   if (isLong) {
     data.openInterestLong = data.openInterestLong + orderSizeFloat;
-    data.openInterestLongUsd = data.openInterestLongUsd + orderSizeUsd;
+    data.openInterestLongUsd = data.openInterestLong * (collateralPrice || 0);
     dayData.openInterestLong = dayData.openInterestLong + orderSizeFloat;
-    dayData.openInterestLongUsd = dayData.openInterestLongUsd + orderSizeUsd;
+    dayData.openInterestLongUsd = dayData.openInterestLong *
+      (collateralPrice || 0);
     product.openInterestLong = product.openInterestLong + orderSizeFloat;
-    product.openInterestLongUsd = product.openInterestLongUsd + orderSizeUsd;
+    product.openInterestLongUsd = product.openInterestLong *
+      (collateralPrice || 0);
     dayProduct.openInterestLong = dayProduct.openInterestLong + orderSizeFloat;
-    dayProduct.openInterestLongUsd = dayProduct.openInterestLongUsd +
-      orderSizeUsd;
+    dayProduct.openInterestLongUsd = dayProduct.openInterestLong *
+      (collateralPrice || 0);
   } else {
     data.openInterestShort = data.openInterestShort + orderSizeFloat;
-    data.openInterestShortUsd = data.openInterestShortUsd + orderSizeUsd;
+    data.openInterestShortUsd = data.openInterestShort * (collateralPrice || 0);
     dayData.openInterestShort = dayData.openInterestShort + orderSizeFloat;
-    dayData.openInterestShortUsd = dayData.openInterestShortUsd + orderSizeUsd;
+    dayData.openInterestShortUsd = dayData.openInterestShort *
+      (collateralPrice || 0);
     product.openInterestShort = product.openInterestShort + orderSizeFloat;
-    product.openInterestShortUsd = product.openInterestShortUsd + orderSizeUsd;
+    product.openInterestShortUsd = product.openInterestShort *
+      (collateralPrice || 0);
     dayProduct.openInterestShort = dayProduct.openInterestShort +
       orderSizeFloat;
-    dayProduct.openInterestShortUsd = dayProduct.openInterestShortUsd +
-      orderSizeUsd;
+    dayProduct.openInterestShortUsd = dayProduct.openInterestShort *
+      (collateralPrice || 0);
   }
 
   savePosition({ store: ctx.store, data: position });

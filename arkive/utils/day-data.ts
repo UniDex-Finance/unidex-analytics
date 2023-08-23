@@ -10,7 +10,7 @@ export const getDayData = async (
   },
 ) => {
   const dayId = Math.floor(params.timestamp / 86400);
-  const id = `${params.currency}:${dayId}:${params.chainId}`;
+  const id = `${params.currency}:${params.chainId}:${dayId}`;
   const dayData = await params.store.retrieve(
     `data:${id}`,
     async () => {
@@ -31,9 +31,11 @@ export const getDayData = async (
           tradeCount: 0,
         });
 
-        const previousDayData = await DayData.findOne(
-          { _id: `${params.currency}:${dayId - 1}:${params.chainId}` },
-        );
+        const previousDayData = await DayData.findOne({
+          _id: {
+            $regex: `^${params.currency}:${params.chainId}:`,
+          },
+        }).sort({ date: -1 });
         if (!previousDayData) {
           dayData.openInterest = dayData.openInterestUsd = 0;
           dayData.openInterestLong = dayData.openInterestLongUsd = 0;

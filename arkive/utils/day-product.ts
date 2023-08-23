@@ -33,13 +33,12 @@ export const getDayProduct = async (
           tradeCount: 0,
         });
 
-        const previousDayProduct = await DayProduct.findOne(
-          {
-            _id: `${params.productId}:${params.currency}:${params.chainId}:${
-              dayId - 1
-            }`,
+        const previousDayProduct = await DayProduct.findOne({
+          _id: {
+            $regex:
+              `^${params.productId}:${params.currency}:${params.chainId}:`,
           },
-        );
+        }).sort({ date: -1 });
         if (!previousDayProduct) {
           dayProduct.openInterest = dayProduct.openInterestUsd = 0;
           dayProduct.openInterestLong = dayProduct.openInterestLongUsd = 0;

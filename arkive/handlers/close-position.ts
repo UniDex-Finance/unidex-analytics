@@ -188,32 +188,38 @@ export const onClosePosition: EventHandlerFor<
   dayProduct.tradeCount = dayProduct.tradeCount + 1;
 
   data.openInterest = data.openInterest - sizeFloat;
-  data.openInterestUsd = data.openInterestUsd - sizeUsd;
+  data.openInterestUsd = data.openInterest * (collateralPrice || 0);
   dayData.openInterest = dayData.openInterest - sizeFloat;
-  dayData.openInterestUsd = dayData.openInterestUsd - sizeUsd;
+  dayData.openInterestUsd = dayData.openInterest * (collateralPrice || 0);
   product.openInterest = product.openInterest - sizeFloat;
-  product.openInterestUsd = product.openInterestUsd - sizeUsd;
+  product.openInterestUsd = product.openInterest * (collateralPrice || 0);
   dayProduct.openInterest = dayProduct.openInterest - sizeFloat;
-  dayProduct.openInterestUsd = dayProduct.openInterestUsd - sizeUsd;
+  dayProduct.openInterestUsd = dayProduct.openInterest * (collateralPrice || 0);
 
   if (position.isLong) {
     data.openInterestLong = data.openInterestLong - sizeFloat;
-    data.openInterestLongUsd = data.openInterestLongUsd - sizeUsd;
+    data.openInterestLongUsd = data.openInterestLong * (collateralPrice || 0);
     dayData.openInterestLong = dayData.openInterestLong - sizeFloat;
-    dayData.openInterestLongUsd = dayData.openInterestLongUsd - sizeUsd;
+    dayData.openInterestLongUsd = dayData.openInterestLong *
+      (collateralPrice || 0);
     product.openInterestLong = product.openInterestLong - sizeFloat;
-    product.openInterestLongUsd = product.openInterestLongUsd - sizeUsd;
+    product.openInterestLongUsd = product.openInterestLong *
+      (collateralPrice || 0);
     dayProduct.openInterestLong = dayProduct.openInterestLong - sizeFloat;
-    dayProduct.openInterestLongUsd = dayProduct.openInterestLongUsd - sizeUsd;
+    dayProduct.openInterestLongUsd = dayProduct.openInterestLong *
+      (collateralPrice || 0);
   } else {
     data.openInterestShort = data.openInterestShort - sizeFloat;
-    data.openInterestShortUsd = data.openInterestShortUsd - sizeUsd;
+    data.openInterestShortUsd = data.openInterestShort * (collateralPrice || 0);
     dayData.openInterestShort = dayData.openInterestShort - sizeFloat;
-    dayData.openInterestShortUsd = dayData.openInterestShortUsd - sizeUsd;
+    dayData.openInterestShortUsd = dayData.openInterestShort *
+      (collateralPrice || 0);
     product.openInterestShort = product.openInterestShort - sizeFloat;
-    product.openInterestShortUsd = product.openInterestShortUsd - sizeUsd;
+    product.openInterestShortUsd = product.openInterestShort *
+      (collateralPrice || 0);
     dayProduct.openInterestShort = dayProduct.openInterestShort - sizeFloat;
-    dayProduct.openInterestShortUsd = dayProduct.openInterestShortUsd - sizeUsd;
+    dayProduct.openInterestShortUsd = dayProduct.openInterestShort *
+      (collateralPrice || 0);
   }
 
   trade.save();

@@ -81,6 +81,7 @@ export const fetchPricesFromCoingecko = async (params: {
   while (params.to > params.from) {
     const averagePrices = await fetchPricesBefore(params.to);
     if (averagePrices.length === 0) break;
+    await new Promise((r) => setTimeout(r, 1000)); // Avoid rate limiting
     prices.push(...averagePrices);
     params.to = averagePrices[averagePrices.length - 1].timestamp;
   }
