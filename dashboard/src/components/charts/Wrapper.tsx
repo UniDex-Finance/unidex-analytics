@@ -1,12 +1,57 @@
 import type React from "react";
 import { cn } from "../../utils/cn";
+import { createContext, useContext, useEffect, useState } from "react";
+import { ChartsToolBar } from "./Toolbar";
+import { DataContext } from "../ChartsContainer";
 
-export type ChartWrapperProps = {
+type GroupBy = "pair" | "collateral" | "chain";
+
+export const FilterContext = createContext<{
+  setGroupBy: React.Dispatch<React.SetStateAction<GroupBy>>;
+  groupBy: GroupBy;
+  setPairFilter: React.Dispatch<React.SetStateAction<string[]>>;
+  setCollateralFilter: React.Dispatch<React.SetStateAction<string[]>>;
+  setChainFilter: React.Dispatch<React.SetStateAction<string[]>>;
+  pairFilter: string[];
+  collateralFilter: string[];
+  chainFilter: string[];
+}>({
+  setGroupBy: () => {},
+  groupBy: "pair",
+  setPairFilter: () => {},
+  setCollateralFilter: () => {},
+  setChainFilter: () => {},
+  pairFilter: [],
+  collateralFilter: [],
+  chainFilter: [],
+});
+
+export interface ChartWrapperProps {
   children: React.ReactNode;
-  isLoading?: boolean;
-};
+  title: string;
+  defaultPairs?: string[];
+  defaultCollaterals?: string[];
+  defaultChains?: string[];
+  fullWidth?: boolean;
+}
 
-export const ChartWrapper = ({ children, isLoading }: ChartWrapperProps) => {
+export function ChartWrapper({
+  children,
+  title,
+  defaultChains = [],
+  defaultCollaterals = [],
+  defaultPairs = [],
+  fullWidth,
+}: ChartWrapperProps) {
+  const { isLoading } = useContext(DataContext);
+  const [groupBy, setGroupBy] = useState<"pair" | "collateral" | "chain">(
+    "pair"
+  );
+  const [pairFilter, setPairFilter] = useState<string[]>(defaultPairs);
+  const [collateralFilter, setCollateralFilter] =
+    useState<string[]>(defaultCollaterals);
+  const [chainFilter, setChainFilter] = useState<string[]>(defaultChains);
+
   return (
     <div
       className={cn(
@@ -14,10 +59,25 @@ export const ChartWrapper = ({ children, isLoading }: ChartWrapperProps) => {
         {
           ["animate-pulse"]: isLoading,
           ["bg-opacity-20"]: isLoading,
+          ["col-span-2"]: fullWidth,
         }
       )}
     >
-      {children}
+      <FilterContext.Provider
+        value={{
+          setGroupBy,
+          groupBy,
+          chainFilter,
+          collateralFilter,
+          pairFilter,
+          setChainFilter,
+          setCollateralFilter,
+          setPairFilter,
+        }}
+      >
+        <ChartsToolBar title={title} />
+        {children}
+      </FilterContext.Provider>
     </div>
   );
-};
+}

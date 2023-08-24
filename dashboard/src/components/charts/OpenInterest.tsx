@@ -1,32 +1,26 @@
+import { useContext, useMemo } from "react";
+import { DataContext } from "../ChartsContainer";
+import { ChartWrapper, FilterContext } from "./Wrapper";
 import {
-  ResponsiveContainer,
-  Line,
+  Bar,
   ComposedChart,
+  Line,
+  ReferenceLine,
+  ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
-  Bar,
-  ReferenceLine,
 } from "recharts";
-import { useContext, useEffect, useMemo } from "react";
-import { FilterContext } from "./Wrapper";
-import { generateColor } from "../../utils/colors";
-import type { StatsRaw } from "../../queries/stats";
 import { getGroupKey, getTopGroups, isFiltered } from "@/utils/data";
-import { DataContext } from "../ChartsContainer";
+import { generateColor, generateGreen, generateRed } from "@/utils/colors";
 import { currencyFormatter } from "@/utils/formatter";
 import { CustomTooltip } from "./CustomTooltip";
 
-export interface MixedBarCumLineChartProps {
-  valueKey: Exclude<
-    keyof StatsRaw["data"]["DayProducts"][number],
-    "_id" | "date"
-  >;
-}
+export interface OpenInterestProps {}
 
-export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
+export function OpenInterest({}: OpenInterestProps) {
   const { data } = useContext(DataContext);
-  const { groupBy, chainFilter, collateralFilter, pairFilter } =
+  const { chainFilter, collateralFilter, groupBy, pairFilter } =
     useContext(FilterContext);
 
   const transformedData = useMemo(() => {
@@ -37,12 +31,13 @@ export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
       };
 
     const totalValue = data.Products.reduce(
-      (acc, product) => acc + product[valueKey],
+      (acc, product) =>
+        acc + product.openInterestLongUsd - product.openInterestShortUsd,
       0
     );
 
     const topGroupLimit =
-      groupBy === "pair" ? 8 : groupBy === "collateral" ? 4 : undefined;
+      groupBy === "pair" ? 4 : groupBy === "collateral" ? 4 : undefined;
 
     const topGroups = getTopGroups({
       chainFilter,
@@ -50,9 +45,11 @@ export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
       data,
       groupBy,
       pairFilter,
-      valueKey,
+      valueKey: "openInterestUsd",
       topGroupLimit,
     });
+
+    let latestTimestamp = 0;
 
     const dataMap = data.DayProducts.reduce(
       (acc, dayProduct) => {
@@ -60,11 +57,11 @@ export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
 
         if (
           isFiltered({
-            splitId: [pair, collateral, chainId],
-            data,
             chainFilter,
             collateralFilter,
+            data,
             pairFilter,
+            splitId: [pair, collateral, chainId],
           })
         ) {
           return acc;
@@ -78,30 +75,44 @@ export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
 
         const timestamp = Number(dayId) * 86400;
 
-        const isTopGroup = topGroups.includes(groupKey);
-        const mappedGroupKey = isTopGroup ? groupKey : "Others";
+        const mappedGroupKey = topGroups.includes(groupKey)
+          ? groupKey
+          : "Others";
 
         if (!acc.data[timestamp]) {
           acc.data[timestamp] = {
             timestamp,
-            [mappedGroupKey]: dayProduct[valueKey],
-            Cumulative: dayProduct[valueKey] + acc.cumulative,
+            [`Short ${mappedGroupKey}`]: -dayProduct.openInterestShortUsd,
+            [`Long ${mappedGroupKey}`]: dayProduct.openInterestLongUsd,
+            ["Net Cumulative"]:
+              dayProduct.openInterestLongUsd -
+              dayProduct.openInterestShortUsd +
+              acc.cumulative,
           };
           for (const key of topGroups) {
             if (key !== mappedGroupKey) {
-              acc.data[timestamp][key] = 0;
+              acc.data[timestamp][`Short ${key}`] = 0;
+              acc.data[timestamp][`Long ${key}`] = 0;
             }
           }
         } else {
-          if (!acc.data[timestamp][mappedGroupKey]) {
-            acc.data[timestamp][mappedGroupKey] = dayProduct[valueKey];
+          if (!acc.data[timestamp][`Short ${mappedGroupKey}`]) {
+            acc.data[timestamp][`Short ${mappedGroupKey}`] =
+              -dayProduct.openInterestShortUsd;
+            acc.data[timestamp][`Long ${mappedGroupKey}`] =
+              dayProduct.openInterestLongUsd;
           } else {
-            acc.data[timestamp][mappedGroupKey] += dayProduct[valueKey];
+            acc.data[timestamp][`Short ${mappedGroupKey}`] -=
+              dayProduct.openInterestShortUsd;
+            acc.data[timestamp][`Long ${mappedGroupKey}`] +=
+              dayProduct.openInterestLongUsd;
           }
-          acc.data[timestamp].Cumulative += dayProduct[valueKey];
+          acc.data[timestamp]["Net Cumulative"] +=
+            dayProduct.openInterestLongUsd - dayProduct.openInterestShortUsd;
         }
 
-        acc.cumulative += dayProduct[valueKey];
+        acc.cumulative +=
+          dayProduct.openInterestLongUsd - dayProduct.openInterestShortUsd;
 
         return acc;
       },
@@ -109,19 +120,22 @@ export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
         data: {} as Record<
           number,
           Record<string, number> & { timestamp: number }
-        >, // timestamp -> { [groupVolume]: number, timestamp: number }
+        >,
         cumulative: 0,
       }
     );
 
-    // add previous cumulative to latest cumulative
     const values = Object.values(dataMap.data).map((item) => {
-      item.Cumulative = item.Cumulative + totalValue - dataMap.cumulative;
+      item["Net Cumulative"] =
+        item["Net Cumulative"] + totalValue - dataMap.cumulative;
       return item;
     });
 
-    return { topGroups, data: values };
-  }, [data, groupBy, collateralFilter, pairFilter, chainFilter]);
+    return {
+      topGroups,
+      data: values,
+    };
+  }, [data, chainFilter, collateralFilter, groupBy, pairFilter]);
 
   return (
     <ResponsiveContainer width="100%" height="85%">
@@ -144,6 +158,7 @@ export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
             })
           }
           tickMargin={10}
+          interval={"equidistantPreserveStart"}
         />
         <YAxis
           tickFormatter={(value) => currencyFormatter.format(value)}
@@ -154,15 +169,11 @@ export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
           tickFormatter={(value) => currencyFormatter.format(value)}
           yAxisId="right"
           orientation="right"
-          domain={([dataMin, dataMax]) => {
-            const range = dataMax - dataMin;
-            return [dataMin, dataMax + range * 0.05];
-          }}
         />
         <Tooltip
           content={({ active, payload, label }) => {
             const total = payload
-              ?.filter((item) => item.name !== "Cumulative")
+              ?.filter((item) => item.name !== "Net Cumulative")
               .reduce((acc, item) => acc + Number(item.value), 0);
             return (
               <CustomTooltip
@@ -170,23 +181,34 @@ export function MixedBarCumLineChart({ valueKey }: MixedBarCumLineChartProps) {
                 active={active}
                 payload={payload}
                 label={label}
+                totalTitle="Net Total"
               />
             );
           }}
         />
         {transformedData.topGroups.map((group, i) => (
-          <Bar
-            dataKey={group}
-            key={group}
-            stackId={"a"}
-            fill={generateColor(i)}
-            yAxisId="left"
-            isAnimationActive={false}
-          />
+          <>
+            <Bar
+              dataKey={`Short ${group}`}
+              key={`Short ${group}`}
+              stackId={"a"}
+              fill={generateRed(i)}
+              yAxisId="left"
+              isAnimationActive={false}
+            />
+            <Bar
+              dataKey={`Long ${group}`}
+              key={`Long ${group}`}
+              stackId={"a"}
+              fill={generateGreen(i)}
+              yAxisId="left"
+              isAnimationActive={false}
+            />
+          </>
         ))}
         <Line
           type="monotone"
-          dataKey="Cumulative"
+          dataKey="Net Cumulative"
           stroke="#8884d8"
           yAxisId="right"
           isAnimationActive={false}
