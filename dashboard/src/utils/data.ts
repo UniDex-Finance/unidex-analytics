@@ -123,8 +123,6 @@ export const getTopGroups = (params: {
         return acc;
       }
 
-      if (!params.topGroupLimit) return acc;
-
       const groupKey = getGroupKey({
         splitId: splitId as [string, string, string],
         data: params.data,

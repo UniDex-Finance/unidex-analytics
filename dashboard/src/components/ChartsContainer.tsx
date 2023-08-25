@@ -1,10 +1,11 @@
 import { createContext, useEffect, useMemo, useState } from "react";
 import { getStats } from "../queries/stats";
 import type { StatsRaw } from "../queries/stats";
-import { MixedBarCumLineChart } from "./charts/MixedBarCumLine";
 import { getCollateralSymbol } from "@/utils/data";
 import { ChartWrapper } from "./charts/Wrapper";
 import { OpenInterest } from "./charts/OpenInterest";
+import { DayProductChart } from "./charts/DayProductChart";
+import { Liquidations } from "./charts/Liquidations";
 
 export const DataContext = createContext<{
   data: StatsRaw["data"] | null;
@@ -23,7 +24,7 @@ export const DataContext = createContext<{
 function VolumeChart() {
   return (
     <ChartWrapper title="Volume">
-      <MixedBarCumLineChart valueKey="cumulativeVolumeUsd" />
+      <DayProductChart valueKey="cumulativeVolumeUsd" />
     </ChartWrapper>
   );
 }
@@ -31,7 +32,7 @@ function VolumeChart() {
 function FeesChart() {
   return (
     <ChartWrapper title="Fees">
-      <MixedBarCumLineChart valueKey="cumulativeFeesUsd" />
+      <DayProductChart valueKey="cumulativeFeesUsd" />
     </ChartWrapper>
   );
 }
@@ -39,7 +40,7 @@ function FeesChart() {
 function MarginChart() {
   return (
     <ChartWrapper title="Margin">
-      <MixedBarCumLineChart valueKey="cumulativeMarginUsd" />
+      <DayProductChart valueKey="cumulativeMarginUsd" />
     </ChartWrapper>
   );
 }
@@ -47,7 +48,38 @@ function MarginChart() {
 function PnlChart() {
   return (
     <ChartWrapper title="Traders' PnL" defaultChains={["42161"]}>
-      <MixedBarCumLineChart valueKey="cumulativePnlUsd" />
+      <DayProductChart valueKey="cumulativePnlUsd" />
+    </ChartWrapper>
+  );
+}
+
+function TradesChart() {
+  return (
+    <ChartWrapper title="Trades">
+      <DayProductChart
+        valueKey="tradeCount"
+        formatter={new Intl.NumberFormat("en-US", { notation: "compact" })}
+      />
+    </ChartWrapper>
+  );
+}
+
+function LiquidationsChart() {
+  return (
+    <ChartWrapper
+      title="Liquidations"
+      hiddenFilters={{ pair: true }}
+      defaultGroupBy="collateral"
+    >
+      <Liquidations />
+    </ChartWrapper>
+  );
+}
+
+function OpenInterestChart() {
+  return (
+    <ChartWrapper title="Open Interest" fullWidth>
+      <OpenInterest />
     </ChartWrapper>
   );
 }
@@ -108,9 +140,9 @@ export const ChartsContainer = () => {
         <FeesChart />
         <MarginChart />
         <PnlChart />
-        <ChartWrapper title="Open Interest" fullWidth>
-          <OpenInterest />
-        </ChartWrapper>
+        <TradesChart />
+        <LiquidationsChart />
+        <OpenInterestChart />
       </DataContext.Provider>
     </div>
   );

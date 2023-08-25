@@ -30,6 +30,7 @@ export function ChartsToolBar({ title }: ChartsToolBarProps) {
     setChainFilter,
     setCollateralFilter,
     setPairFilter,
+    hiddenFilters,
   } = useContext(FilterContext);
   const { allChains, allCollaterals, allPairs } = useContext(DataContext);
 
@@ -50,39 +51,45 @@ export function ChartsToolBar({ title }: ChartsToolBarProps) {
           <DropdownMenuContent>
             <DropdownMenuLabel>Filter By</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <Filter
-                options={allPairs.map((pair) => ({
-                  label: pair,
-                  value: pair,
-                }))}
-                setter={setPairFilter}
-                title="Pair"
-                selectedValues={pairFilter}
-              />
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <Filter
-                options={allCollaterals.map((collateral) => ({
-                  label: collateral,
-                  value: collateral,
-                }))}
-                setter={setCollateralFilter}
-                title="Collateral"
-                selectedValues={collateralFilter}
-              />
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-              <Filter
-                options={allChains.map((chain) => ({
-                  label: getChainName(chain),
-                  value: chain,
-                }))}
-                setter={setChainFilter}
-                title="Chain"
-                selectedValues={chainFilter}
-              />
-            </DropdownMenuItem>
+            {!hiddenFilters.pair && (
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Filter
+                  options={allPairs.map((pair) => ({
+                    label: pair,
+                    value: pair,
+                  }))}
+                  setter={setPairFilter}
+                  title="Pair"
+                  selectedValues={pairFilter}
+                />
+              </DropdownMenuItem>
+            )}
+            {!hiddenFilters.collateral && (
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Filter
+                  options={allCollaterals.map((collateral) => ({
+                    label: collateral,
+                    value: collateral,
+                  }))}
+                  setter={setCollateralFilter}
+                  title="Collateral"
+                  selectedValues={collateralFilter}
+                />
+              </DropdownMenuItem>
+            )}
+            {!hiddenFilters.chain && (
+              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                <Filter
+                  options={allChains.map((chain) => ({
+                    label: getChainName(chain),
+                    value: chain,
+                  }))}
+                  setter={setChainFilter}
+                  title="Chain"
+                  selectedValues={chainFilter}
+                />
+              </DropdownMenuItem>
+            )}
             {(pairFilter.length > 0 ||
               collateralFilter.length > 0 ||
               chainFilter.length > 0) && (

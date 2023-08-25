@@ -40,6 +40,15 @@ export const buildQuery = (params: { from: number; to: number }) => {
 				currency
 				chainId
 			}
+			Trades(filter: {_operators: {timestamp: {gt: $gt, lte: $lte}}}, limit: 0) {
+				timestamp
+				wasLiquidated
+				sizeUsd
+				productId
+				_id
+				chainId
+				currency
+			}
 		}`,
     variables: { "gt": params.from, "lte": params.to },
   };
@@ -98,6 +107,15 @@ export type StatsRaw = {
       symbol: string;
       currency: string;
       chainId: number;
+    }[];
+    Trades: {
+      timestamp: number;
+      wasLiquidated: boolean;
+      sizeUsd: number;
+      productId: string;
+      _id: string;
+      chainId: number;
+      currency: string;
     }[];
   };
 };

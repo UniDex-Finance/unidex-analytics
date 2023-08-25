@@ -7,6 +7,7 @@ export interface CustomTooltipProps<
 > extends TooltipProps<TValue, TName> {
   total?: number;
   totalTitle?: string;
+  numberFormatter?: Intl.NumberFormat;
 }
 
 export function CustomTooltip<
@@ -18,6 +19,7 @@ export function CustomTooltip<
   payload,
   total,
   totalTitle,
+  numberFormatter,
 }: CustomTooltipProps<TValue, TName>) {
   return (
     <div className="flex flex-col gap-1">
@@ -35,7 +37,11 @@ export function CustomTooltip<
                 style={{ backgroundColor: item.color }}
               />
               <div className="flex-1">{item.name}</div>
-              <div>{currencyFormatter.format(Number(item.value))}</div>
+              <div>
+                {numberFormatter
+                  ? numberFormatter.format(Number(item.value))
+                  : currencyFormatter.format(Number(item.value))}
+              </div>
             </div>
           ))}
           <div className="flex items-center gap-2">
@@ -45,7 +51,9 @@ export function CustomTooltip<
             />
             <div className="flex-1 font-bold">{totalTitle ?? "Total"}</div>
             <div className="font-bold">
-              {currencyFormatter.format(total ?? 0)}
+              {numberFormatter
+                ? numberFormatter.format(total ?? 0)
+                : currencyFormatter.format(total ?? 0)}
             </div>
           </div>
         </div>

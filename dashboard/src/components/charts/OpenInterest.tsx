@@ -1,35 +1,21 @@
-import { useContext, useMemo } from "react";
-import { DataContext } from "../ChartsContainer";
-import { ChartWrapper, FilterContext } from "./Wrapper";
-import {
-  Bar,
-  ComposedChart,
-  Line,
-  ReferenceLine,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import { Bar } from "recharts";
 import { getGroupKey, getTopGroups, isFiltered } from "@/utils/data";
-import { generateColor, generateGreen, generateRed } from "@/utils/colors";
-import { currencyFormatter } from "@/utils/formatter";
-import { CustomTooltip } from "./CustomTooltip";
+import { generateGreen, generateRed } from "@/utils/colors";
+import {
+  MixedBarCumLineChart,
+  MixedBarCumLineChartProps,
+} from "./MixedBarCumLine";
 
 export interface OpenInterestProps {}
 
 export function OpenInterest({}: OpenInterestProps) {
-  const { data } = useContext(DataContext);
-  const { chainFilter, collateralFilter, groupBy, pairFilter } =
-    useContext(FilterContext);
-
-  const transformedData = useMemo(() => {
-    if (!data)
-      return {
-        topGroups: [],
-        data: [],
-      };
-
+  const transformer: MixedBarCumLineChartProps["transformer"] = ({
+    chainFilter,
+    collateralFilter,
+    data,
+    groupBy,
+    pairFilter,
+  }) => {
     const totalValue = data.Products.reduce(
       (acc, product) =>
         acc + product.openInterestLongUsd - product.openInterestShortUsd,
@@ -96,7 +82,10 @@ export function OpenInterest({}: OpenInterestProps) {
             }
           }
         } else {
-          if (!acc.data[timestamp][`Short ${mappedGroupKey}`]) {
+          if (
+            !acc.data[timestamp][`Short ${mappedGroupKey}`] ||
+            !acc.data[timestamp][`Long ${mappedGroupKey}`]
+          ) {
             acc.data[timestamp][`Short ${mappedGroupKey}`] =
               -dayProduct.openInterestShortUsd;
             acc.data[timestamp][`Long ${mappedGroupKey}`] =
@@ -135,86 +124,32 @@ export function OpenInterest({}: OpenInterestProps) {
       topGroups,
       data: values,
     };
-  }, [data, chainFilter, collateralFilter, groupBy, pairFilter]);
+  };
 
   return (
-    <ResponsiveContainer width="100%" height="85%">
-      <ComposedChart
-        data={transformedData.data}
-        margin={{ left: 20, right: 10 }}
-        syncId={"date"}
-        width={600}
-        height={400}
-        stackOffset="sign"
-      >
-        <XAxis
-          dataKey="timestamp"
-          scale="time"
-          type="number"
-          domain={([dataMin, dataMax]) => [dataMin - 43200, dataMax + 43200]}
-          tickFormatter={(value) =>
-            new Date(value * 1000).toLocaleDateString("en-US", {
-              dateStyle: "short",
-            })
-          }
-          tickMargin={10}
-          interval={"equidistantPreserveStart"}
-        />
-        <YAxis
-          tickFormatter={(value) => currencyFormatter.format(value)}
-          tickMargin={10}
-          yAxisId="left"
-        />
-        <YAxis
-          tickFormatter={(value) => currencyFormatter.format(value)}
-          yAxisId="right"
-          orientation="right"
-        />
-        <Tooltip
-          content={({ active, payload, label }) => {
-            const total = payload
-              ?.filter((item) => item.name !== "Net Cumulative")
-              .reduce((acc, item) => acc + Number(item.value), 0);
-            return (
-              <CustomTooltip
-                total={total}
-                active={active}
-                payload={payload}
-                label={label}
-                totalTitle="Net Total"
-              />
-            );
-          }}
-        />
-        {transformedData.topGroups.map((group, i) => (
-          <>
-            <Bar
-              dataKey={`Short ${group}`}
-              key={`Short ${group}`}
-              stackId={"a"}
-              fill={generateRed(i)}
-              yAxisId="left"
-              isAnimationActive={false}
-            />
-            <Bar
-              dataKey={`Long ${group}`}
-              key={`Long ${group}`}
-              stackId={"a"}
-              fill={generateGreen(i)}
-              yAxisId="left"
-              isAnimationActive={false}
-            />
-          </>
-        ))}
-        <Line
-          type="monotone"
-          dataKey="Net Cumulative"
-          stroke="#8884d8"
-          yAxisId="right"
-          isAnimationActive={false}
-        />
-        <ReferenceLine y={0} yAxisId={"left"} stroke="#666" />
-      </ComposedChart>
-    </ResponsiveContainer>
+    <MixedBarCumLineChart
+      barsMapper={(group, i) => (
+        <>
+          <Bar
+            dataKey={`Short ${group}`}
+            key={`Short ${group}`}
+            stackId={"a"}
+            fill={generateRed(i)}
+            yAxisId="left"
+            isAnimationActive={false}
+          />
+          <Bar
+            dataKey={`Long ${group}`}
+            key={`Long ${group}`}
+            stackId={"a"}
+            fill={generateGreen(i)}
+            yAxisId="left"
+            isAnimationActive={false}
+          />
+        </>
+      )}
+      lineKey="Net Cumulative"
+      transformer={transformer}
+    />
   );
 }

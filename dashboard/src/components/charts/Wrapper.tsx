@@ -15,6 +15,11 @@ export const FilterContext = createContext<{
   pairFilter: string[];
   collateralFilter: string[];
   chainFilter: string[];
+  hiddenFilters: {
+    pair?: boolean;
+    collateral?: boolean;
+    chain?: boolean;
+  };
 }>({
   setGroupBy: () => {},
   groupBy: "pair",
@@ -24,6 +29,7 @@ export const FilterContext = createContext<{
   pairFilter: [],
   collateralFilter: [],
   chainFilter: [],
+  hiddenFilters: {},
 });
 
 export interface ChartWrapperProps {
@@ -33,6 +39,12 @@ export interface ChartWrapperProps {
   defaultCollaterals?: string[];
   defaultChains?: string[];
   fullWidth?: boolean;
+  hiddenFilters?: {
+    pair?: boolean;
+    collateral?: boolean;
+    chain?: boolean;
+  };
+  defaultGroupBy?: GroupBy;
 }
 
 export function ChartWrapper({
@@ -42,10 +54,12 @@ export function ChartWrapper({
   defaultCollaterals = [],
   defaultPairs = [],
   fullWidth,
+  hiddenFilters = {},
+  defaultGroupBy = "pair",
 }: ChartWrapperProps) {
   const { isLoading } = useContext(DataContext);
   const [groupBy, setGroupBy] = useState<"pair" | "collateral" | "chain">(
-    "pair"
+    defaultGroupBy
   );
   const [pairFilter, setPairFilter] = useState<string[]>(defaultPairs);
   const [collateralFilter, setCollateralFilter] =
@@ -73,6 +87,7 @@ export function ChartWrapper({
           setChainFilter,
           setCollateralFilter,
           setPairFilter,
+          hiddenFilters,
         }}
       >
         <ChartsToolBar title={title} />
