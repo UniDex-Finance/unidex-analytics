@@ -30,6 +30,8 @@ export const getDayProduct = async (
           cumulativeVolumeUsd: 0,
           cumulativeMargin: 0,
           cumulativeMarginUsd: 0,
+          cumulativeLiquidations: 0,
+          cumulativeLiquidationsUsd: 0,
           tradeCount: 0,
         });
 

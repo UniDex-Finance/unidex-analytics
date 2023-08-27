@@ -6,14 +6,13 @@ import {
 import { TRADING_ABI } from "../abis/Trading.ts";
 import { UNIT_DECIMALS } from "../utils/constants.ts";
 import { getPosition, savePosition } from "../utils/position.ts";
-import { getData, saveData } from "../utils/data.ts";
-import { getDayData, saveDayData } from "../utils/day-data.ts";
 import { getProduct, saveProduct } from "../utils/product.ts";
 import { getChainId } from "../utils/chainId.ts";
 import { decodeHexString } from "../utils/decoder.ts";
 import { getPrice } from "../utils/prices.ts";
 import { chainIdToCoingeckoId } from "../config/coingecko-networks.ts";
 import { getDayProduct, saveDayProduct } from "../utils/day-product.ts";
+import { User } from "../entities/user.ts";
 
 export const onPositionUpdated: EventHandlerFor<
   typeof TRADING_ABI,
@@ -22,11 +21,11 @@ export const onPositionUpdated: EventHandlerFor<
   const { currency, fee, isLong, key, margin, price, productId, size, user } =
     ctx.event.args;
 
-  const getInfo = async () =>
+  const getInfo = async (i: number) =>
     await Promise.all([
       getChainId(ctx),
       getTimestampFromBlockNumber({
-        blockNumber: ctx.event.blockNumber,
+        blockNumber: ctx.event.blockNumber + BigInt(i),
         client: ctx.client,
         store: ctx.store,
       }),
@@ -34,16 +33,18 @@ export const onPositionUpdated: EventHandlerFor<
 
   let chainId;
   let timestampMs;
+  let i = 0;
 
   while (true) {
     try {
-      const [chainId_, timestampMs_] = await getInfo();
+      const [chainId_, timestampMs_] = await getInfo(i);
       chainId = chainId_;
       timestampMs = timestampMs_;
       break;
     } catch (e) {
-      ctx.logger.error(e);
-      await new Promise((r) => setTimeout(r, 2000));
+      ctx.logger.warning(e);
+      await new Promise((r) => setTimeout(r, 5000 + i));
+      i++;
     }
   }
 
@@ -51,8 +52,8 @@ export const onPositionUpdated: EventHandlerFor<
 
   const decodedProductId = decodeHexString(productId);
 
-  const [collateralPrice, positionInfo, data, dayData, product, dayProduct] =
-    await Promise.all([
+  const [collateralPrice, positionInfo, product, dayProduct] = await Promise
+    .all([
       getPrice({
         currency,
         chainId: chainId as keyof typeof chainIdToCoingeckoId,
@@ -64,18 +65,6 @@ export const onPositionUpdated: EventHandlerFor<
         store: ctx.store,
         chainId,
         productId: decodedProductId,
-      }),
-      getData({
-        currency,
-        store: ctx.store,
-        chainId,
-        timestamp,
-      }),
-      getDayData({
-        currency,
-        store: ctx.store,
-        timestamp,
-        chainId,
       }),
       getProduct({
         productId: decodedProductId,
@@ -137,20 +126,6 @@ export const onPositionUpdated: EventHandlerFor<
   const orderMarginFloat = bigIntToFloat(orderMargin, UNIT_DECIMALS);
   const orderMarginUsd = orderMarginFloat * (collateralPrice || 0);
 
-  data.cumulativeFees = data.cumulativeFees + feeFloat;
-  data.cumulativeFeesUsd = data.cumulativeFeesUsd + feeUsd;
-  data.cumulativeVolume = data.cumulativeVolume + orderSizeFloat;
-  data.cumulativeVolumeUsd = data.cumulativeVolumeUsd + orderSizeUsd;
-  data.cumulativeMargin = data.cumulativeMargin + orderMarginFloat;
-  data.cumulativeMarginUsd = data.cumulativeMarginUsd + orderMarginUsd;
-
-  dayData.cumulativeFees = dayData.cumulativeFees + feeFloat;
-  dayData.cumulativeFeesUsd = dayData.cumulativeFeesUsd + feeUsd;
-  dayData.cumulativeVolume = dayData.cumulativeVolume + orderSizeFloat;
-  dayData.cumulativeVolumeUsd = dayData.cumulativeVolumeUsd + orderSizeUsd;
-  dayData.cumulativeMargin = dayData.cumulativeMargin + orderMarginFloat;
-  dayData.cumulativeMarginUsd = dayData.cumulativeMarginUsd + orderMarginUsd;
-
   product.cumulativeFees = product.cumulativeFees + feeFloat;
   product.cumulativeFeesUsd = product.cumulativeFeesUsd + feeUsd;
   product.cumulativeVolume = product.cumulativeVolume + orderSizeFloat;
@@ -170,27 +145,16 @@ export const onPositionUpdated: EventHandlerFor<
   if (isNewPosition) {
     position.createdAtTimestamp = timestamp;
     position.createdAtBlockNumber = Number(ctx.event.blockNumber);
-    data.positionCount = data.positionCount + 1;
-    dayData.positionCount = dayData.positionCount + 1;
     product.positionCount = product.positionCount + 1;
     dayProduct.positionCount = dayProduct.positionCount + 1;
   }
 
-  data.openInterest = data.openInterest + orderSizeFloat;
-  data.openInterestUsd = data.openInterest * (collateralPrice || 0);
-  dayData.openInterest = dayData.openInterest + orderSizeFloat;
-  dayData.openInterestUsd = dayData.openInterest * (collateralPrice || 0);
   product.openInterest = product.openInterest + orderSizeFloat;
   product.openInterestUsd = product.openInterest * (collateralPrice || 0);
   dayProduct.openInterest = dayProduct.openInterest + orderSizeFloat;
   dayProduct.openInterestUsd = dayProduct.openInterest * (collateralPrice || 0);
 
   if (isLong) {
-    data.openInterestLong = data.openInterestLong + orderSizeFloat;
-    data.openInterestLongUsd = data.openInterestLong * (collateralPrice || 0);
-    dayData.openInterestLong = dayData.openInterestLong + orderSizeFloat;
-    dayData.openInterestLongUsd = dayData.openInterestLong *
-      (collateralPrice || 0);
     product.openInterestLong = product.openInterestLong + orderSizeFloat;
     product.openInterestLongUsd = product.openInterestLong *
       (collateralPrice || 0);
@@ -198,11 +162,6 @@ export const onPositionUpdated: EventHandlerFor<
     dayProduct.openInterestLongUsd = dayProduct.openInterestLong *
       (collateralPrice || 0);
   } else {
-    data.openInterestShort = data.openInterestShort + orderSizeFloat;
-    data.openInterestShortUsd = data.openInterestShort * (collateralPrice || 0);
-    dayData.openInterestShort = dayData.openInterestShort + orderSizeFloat;
-    dayData.openInterestShortUsd = dayData.openInterestShort *
-      (collateralPrice || 0);
     product.openInterestShort = product.openInterestShort + orderSizeFloat;
     product.openInterestShortUsd = product.openInterestShort *
       (collateralPrice || 0);
@@ -212,9 +171,21 @@ export const onPositionUpdated: EventHandlerFor<
       (collateralPrice || 0);
   }
 
+  User.updateOne(
+    { _id: user },
+    {
+      $set: {
+        updatedAtTimestamp: timestamp,
+        updatedAtBlockNumber: Number(ctx.event.blockNumber),
+      },
+      $setOnInsert: {
+        createdAtTimestamp: timestamp,
+        createdAtBlockNumber: Number(ctx.event.blockNumber),
+      },
+    },
+    { upsert: true },
+  );
   savePosition({ store: ctx.store, data: position });
-  saveData({ store: ctx.store, data });
-  saveDayData({ store: ctx.store, data: dayData });
   saveProduct({ store: ctx.store, data: product });
   saveDayProduct({ store: ctx.store, data: dayProduct });
 };

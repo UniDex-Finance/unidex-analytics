@@ -28,6 +28,8 @@ export const getProduct = async (
           cumulativeVolumeUsd: 0,
           cumulativeMargin: 0,
           cumulativeMarginUsd: 0,
+          cumulativeLiquidations: 0,
+          cumulativeLiquidationsUsd: 0,
           openInterest: 0,
           openInterestUsd: 0,
           openInterestLong: 0,

@@ -5,6 +5,7 @@ export interface BaseDataStats {
   cumulativePnl: number;
   cumulativeVolume: number;
   cumulativeMargin: number;
+  cumulativeLiquidations: number;
 
   openInterest: number;
   openInterestLong: number;
