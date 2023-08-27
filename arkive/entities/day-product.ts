@@ -48,6 +48,14 @@ export const DayProduct = createEntity<DayProduct>("DayProduct", {
     type: "number",
     index: true,
   },
+  cumulativeLiquidations: {
+    type: "number",
+    index: true,
+  },
+  cumulativeLiquidationsUsd: {
+    type: "number",
+    index: true,
+  },
 
   openInterest: {
     type: "number",

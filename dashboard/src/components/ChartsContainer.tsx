@@ -5,7 +5,7 @@ import { getCollateralSymbol } from "@/utils/data";
 import { ChartWrapper } from "./charts/Wrapper";
 import { OpenInterest } from "./charts/OpenInterest";
 import { DayProductChart } from "./charts/DayProductChart";
-import { Liquidations } from "./charts/Liquidations";
+import { StatCard } from "./StatCard";
 
 export const DataContext = createContext<{
   data: StatsRaw["data"] | null;
@@ -66,12 +66,8 @@ function TradesChart() {
 
 function LiquidationsChart() {
   return (
-    <ChartWrapper
-      title="Liquidations"
-      hiddenFilters={{ pair: true }}
-      defaultGroupBy="collateral"
-    >
-      <Liquidations />
+    <ChartWrapper title="Liquidations">
+      <DayProductChart valueKey="cumulativeLiquidationsUsd" />
     </ChartWrapper>
   );
 }
@@ -132,18 +128,30 @@ export const ChartsContainer = () => {
   }, []);
 
   return (
-    <div className="grid md:grid-cols-2 gap-4">
-      <DataContext.Provider
-        value={{ allChains, allCollaterals, allPairs, data, isLoading }}
-      >
-        <VolumeChart />
-        <FeesChart />
-        <MarginChart />
-        <PnlChart />
-        <TradesChart />
-        <LiquidationsChart />
-        <OpenInterestChart />
-      </DataContext.Provider>
-    </div>
+    <DataContext.Provider
+      value={{ allChains, allCollaterals, allPairs, data, isLoading }}
+    >
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col lg:flex-row gap-4 items-center justify-stretch">
+          <StatCard title="All-Time Volume" valueKey="cumulativeVolumeUsd" />
+          <StatCard title="Unique Users" valueKey="usersCount" />
+          <StatCard title="All-Time Fees" valueKey="cumulativeFeesUsd" />
+          <StatCard
+            title="All-Time Liquidations"
+            valueKey="cumulativeLiquidationsUsd"
+          />
+          <StatCard title="All-Time Traders' PnL" valueKey="cumulativePnlUsd" />
+        </div>
+        <div className="grid md:grid-cols-2 gap-4">
+          <VolumeChart />
+          <FeesChart />
+          <MarginChart />
+          <PnlChart />
+          <TradesChart />
+          <LiquidationsChart />
+          <OpenInterestChart />
+        </div>
+      </div>
+    </DataContext.Provider>
   );
 };

@@ -73,7 +73,7 @@ export function ChartWrapper({
         {
           ["animate-pulse"]: isLoading,
           ["bg-opacity-20"]: isLoading,
-          ["col-span-2"]: fullWidth,
+          ["md:col-span-2"]: fullWidth,
         }
       )}
     >

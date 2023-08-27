@@ -184,7 +184,7 @@ export const onPositionUpdated: EventHandlerFor<
       },
     },
     { upsert: true },
-  );
+  ).then(() => {});
   savePosition({ store: ctx.store, data: position });
   saveProduct({ store: ctx.store, data: product });
   saveDayProduct({ store: ctx.store, data: dayProduct });

@@ -15,6 +15,7 @@ export const buildQuery = (params: { from: number; to: number }) => {
 				_id
 				cumulativeVolumeUsd
 				cumulativeFeesUsd
+				cumulativeLiquidationsUsd
 				openInterestLongUsd
 				openInterestShortUsd
 				openInterestUsd
@@ -27,6 +28,7 @@ export const buildQuery = (params: { from: number; to: number }) => {
 				_id
 				cumulativeVolumeUsd
 				cumulativeFeesUsd
+				cumulativeLiquidationsUsd
 				openInterestLongUsd
 				openInterestShortUsd
 				openInterestUsd
@@ -40,15 +42,7 @@ export const buildQuery = (params: { from: number; to: number }) => {
 				currency
 				chainId
 			}
-			Trades(filter: {_operators: {timestamp: {gt: $gt, lte: $lte}}}, limit: 0) {
-				timestamp
-				wasLiquidated
-				sizeUsd
-				productId
-				_id
-				chainId
-				currency
-			}
+			UsersCount
 		}`,
     variables: { "gt": params.from, "lte": params.to },
   };
@@ -83,6 +77,7 @@ export type StatsRaw = {
       _id: string;
       cumulativeVolumeUsd: number;
       cumulativeFeesUsd: number;
+      cumulativeLiquidationsUsd: number;
       openInterestLongUsd: number;
       openInterestShortUsd: number;
       openInterestUsd: number;
@@ -95,6 +90,7 @@ export type StatsRaw = {
       _id: string;
       cumulativeVolumeUsd: number;
       cumulativeFeesUsd: number;
+      cumulativeLiquidationsUsd: number;
       openInterestLongUsd: number;
       openInterestShortUsd: number;
       cumulativeMarginUsd: number;
@@ -108,14 +104,6 @@ export type StatsRaw = {
       currency: string;
       chainId: number;
     }[];
-    Trades: {
-      timestamp: number;
-      wasLiquidated: boolean;
-      sizeUsd: number;
-      productId: string;
-      _id: string;
-      chainId: number;
-      currency: string;
-    }[];
+    UsersCount: number;
   };
 };
