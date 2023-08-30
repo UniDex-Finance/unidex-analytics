@@ -57,13 +57,10 @@ export function MixedBarCumLineChart({
   }, [data, groupBy, collateralFilter, pairFilter, chainFilter]);
 
   return (
-    <ResponsiveContainer width="100%" height="85%">
+    <ResponsiveContainer width="100%" height={425}>
       <ComposedChart
         data={transformedData.data}
         margin={{ left: 20, right: 10 }}
-        syncId={"date"}
-        width={600}
-        height={400}
         stackOffset="sign"
       >
         <XAxis
@@ -126,6 +123,7 @@ export function MixedBarCumLineChart({
             stroke="#8884d8"
             yAxisId="right"
             isAnimationActive={false}
+            dot={false}
           />
         )}
         <ReferenceLine y={0} yAxisId={"left"} stroke="#666" />
