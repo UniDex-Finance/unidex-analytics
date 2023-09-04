@@ -1,21 +1,18 @@
-import {
-  bigIntToFloat,
-  EventHandlerFor,
-  getTimestampFromBlockNumber,
-} from "../deps.ts";
-import { TRADING_ABI } from "../abis/Trading.ts";
+import { bigIntToFloat, EventHandlerFor } from "../deps.ts";
 import { getPosition, savePosition } from "../utils/position.ts";
 import { getProduct, saveProduct } from "../utils/product.ts";
 import { Trade } from "../entities/trade.ts";
 import { UNIT_DECIMALS } from "../utils/constants.ts";
-import { getChainId } from "../utils/chainId.ts";
 import { decodeHexString } from "../utils/decoder.ts";
 import { getDayProduct, saveDayProduct } from "../utils/day-product.ts";
 import { getPrice } from "../utils/prices.ts";
 import { chainIdToCoingeckoId } from "../config/coingecko-networks.ts";
+import { TRADING_V2_ABI } from "../abis/TradingV2.ts";
+import { getInfo } from "../utils/info.ts";
+import { Order } from "../entities/order.ts";
 
 export const onClosePosition: EventHandlerFor<
-  typeof TRADING_ABI,
+  typeof TRADING_V2_ABI,
   "ClosePosition"
 > = async (ctx) => {
   const {
@@ -31,14 +28,7 @@ export const onClosePosition: EventHandlerFor<
     wasLiquidated,
   } = ctx.event.args;
 
-  const [chainId, timestampMs] = await Promise.all([
-    getChainId(ctx),
-    getTimestampFromBlockNumber({
-      blockNumber: ctx.event.blockNumber,
-      client: ctx.client,
-      store: ctx.store,
-    }),
-  ]);
+  const { chainId, timestampMs } = await getInfo(ctx);
 
   const decodedProductId = decodeHexString(productId);
 
@@ -179,6 +169,17 @@ export const onClosePosition: EventHandlerFor<
     dayProduct.cumulativeLiquidationsUsd =
       dayProduct.cumulativeLiquidationsUsd + sizeUsd;
   }
+
+  Order.updateOne({
+    _id: `${key}:${chainId}`,
+    isClose: true,
+  }, {
+    $set: {
+      isOpen: false,
+      updatedAtTimestamp: timestamp,
+      updatedAtBlockNumber: Number(ctx.event.blockNumber),
+    },
+  });
 
   trade.save();
   saveProduct({ store: ctx.store, data: product });

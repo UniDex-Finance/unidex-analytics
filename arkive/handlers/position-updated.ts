@@ -1,52 +1,24 @@
-import {
-  bigIntToFloat,
-  EventHandlerFor,
-  getTimestampFromBlockNumber,
-} from "../deps.ts";
-import { TRADING_ABI } from "../abis/Trading.ts";
+import { bigIntToFloat, EventHandlerFor } from "../deps.ts";
 import { UNIT_DECIMALS } from "../utils/constants.ts";
 import { getPosition, savePosition } from "../utils/position.ts";
 import { getProduct, saveProduct } from "../utils/product.ts";
-import { getChainId } from "../utils/chainId.ts";
 import { decodeHexString } from "../utils/decoder.ts";
 import { getPrice } from "../utils/prices.ts";
 import { chainIdToCoingeckoId } from "../config/coingecko-networks.ts";
 import { getDayProduct, saveDayProduct } from "../utils/day-product.ts";
 import { User } from "../entities/user.ts";
+import { TRADING_V2_ABI } from "../abis/TradingV2.ts";
+import { getInfo } from "../utils/info.ts";
+import { Order } from "../entities/order.ts";
 
 export const onPositionUpdated: EventHandlerFor<
-  typeof TRADING_ABI,
+  typeof TRADING_V2_ABI,
   "PositionUpdated"
 > = async (ctx) => {
   const { currency, fee, isLong, key, margin, price, productId, size, user } =
     ctx.event.args;
 
-  const getInfo = async (i: number) =>
-    await Promise.all([
-      getChainId(ctx),
-      getTimestampFromBlockNumber({
-        blockNumber: ctx.event.blockNumber + BigInt(i),
-        client: ctx.client,
-        store: ctx.store,
-      }),
-    ]);
-
-  let chainId;
-  let timestampMs;
-  let i = 0;
-
-  while (true) {
-    try {
-      const [chainId_, timestampMs_] = await getInfo(i);
-      chainId = chainId_;
-      timestampMs = timestampMs_;
-      break;
-    } catch (e) {
-      ctx.logger.warning(e);
-      await new Promise((r) => setTimeout(r, 5000 + i));
-      i++;
-    }
-  }
+  const { chainId, timestampMs } = await getInfo(ctx);
 
   const timestamp = timestampMs / 1000;
 
@@ -185,6 +157,18 @@ export const onPositionUpdated: EventHandlerFor<
     },
     { upsert: true },
   ).then(() => {});
+
+  Order.updateOne({
+    _id: `${key}:${chainId}`,
+    isClose: false,
+  }, {
+    $set: {
+      isOpen: false,
+      updatedAtTimestamp: timestamp,
+      updatedAtBlockNumber: Number(ctx.event.blockNumber),
+    },
+  });
+
   savePosition({ store: ctx.store, data: position });
   saveProduct({ store: ctx.store, data: product });
   saveDayProduct({ store: ctx.store, data: dayProduct });
