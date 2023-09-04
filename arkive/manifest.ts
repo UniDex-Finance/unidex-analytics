@@ -3,6 +3,7 @@ import { sources } from "./config/sources.ts";
 import { Manifest } from "./deps.ts";
 import { DayProduct } from "./entities/day-product.ts";
 import { HourPrice } from "./entities/hour-price.ts";
+import { Order } from "./entities/order.ts";
 import { Position } from "./entities/position.ts";
 import { Product } from "./entities/product.ts";
 import { TokenInfo } from "./entities/token-info.ts";
@@ -18,6 +19,7 @@ export default new Manifest("unidex")
     TokenInfo,
     HourPrice,
     User,
+		Order
   ])
   .addChain("arbitrum", (chain) =>
     chain

@@ -158,9 +158,8 @@ export const onPositionUpdated: EventHandlerFor<
     { upsert: true },
   ).then(() => {});
 
-  Order.updateOne({
+  await Order.updateOne({
     _id: `${key}:${chainId}`,
-    isClose: false,
   }, {
     $set: {
       isOpen: false,

@@ -170,9 +170,8 @@ export const onClosePosition: EventHandlerFor<
       dayProduct.cumulativeLiquidationsUsd + sizeUsd;
   }
 
-  Order.updateOne({
+  await Order.updateOne({
     _id: `${key}:${chainId}`,
-    isClose: true,
   }, {
     $set: {
       isOpen: false,
