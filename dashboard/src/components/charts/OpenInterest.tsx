@@ -1,9 +1,9 @@
 import { Bar } from "recharts";
-import { getGroupKey, getTopGroups, isFiltered } from "@/utils/data";
+import { getGroupKey, isFiltered } from "@/utils/data";
 import { generateGreen, generateRed } from "@/utils/colors";
 import {
   MixedBarCumLineChart,
-  MixedBarCumLineChartProps,
+  type MixedBarCumLineChartProps,
 } from "./MixedBarCumLine";
 
 export interface OpenInterestProps {}
@@ -25,17 +25,15 @@ export function OpenInterest({}: OpenInterestProps) {
     const topGroupLimit =
       groupBy === "pair" ? 4 : groupBy === "collateral" ? 4 : undefined;
 
-    const topGroups = getTopGroups({
-      chainFilter,
-      collateralFilter,
-      data,
-      groupBy,
-      pairFilter,
-      valueKey: "openInterestUsd",
-      topGroupLimit,
-    });
-
-    let latestTimestamp = 0;
+    // const topGroups = getTopGroups({
+    //   chainFilter,
+    //   collateralFilter,
+    //   data,
+    //   groupBy,
+    //   pairFilter,
+    //   valueKey: "openInterestUsd",
+    //   topGroupLimit,
+    // });
 
     const dataMap = data.DayProducts.reduce(
       (acc, dayProduct) => {
@@ -61,39 +59,29 @@ export function OpenInterest({}: OpenInterestProps) {
 
         const timestamp = Number(dayId) * 86400;
 
-        const mappedGroupKey = topGroups.includes(groupKey)
-          ? groupKey
-          : "Others";
-
         if (!acc.data[timestamp]) {
           acc.data[timestamp] = {
             timestamp,
-            [`Short ${mappedGroupKey}`]: -dayProduct.openInterestShortUsd,
-            [`Long ${mappedGroupKey}`]: dayProduct.openInterestLongUsd,
+            [`Short ${groupKey}`]: -dayProduct.openInterestShortUsd,
+            [`Long ${groupKey}`]: dayProduct.openInterestLongUsd,
             ["Net Cumulative"]:
               dayProduct.openInterestLongUsd -
               dayProduct.openInterestShortUsd +
               acc.cumulative,
           };
-          for (const key of topGroups) {
-            if (key !== mappedGroupKey) {
-              acc.data[timestamp][`Short ${key}`] = 0;
-              acc.data[timestamp][`Long ${key}`] = 0;
-            }
-          }
         } else {
           if (
-            !acc.data[timestamp][`Short ${mappedGroupKey}`] ||
-            !acc.data[timestamp][`Long ${mappedGroupKey}`]
+            !acc.data[timestamp][`Short ${groupKey}`] ||
+            !acc.data[timestamp][`Long ${groupKey}`]
           ) {
-            acc.data[timestamp][`Short ${mappedGroupKey}`] =
+            acc.data[timestamp][`Short ${groupKey}`] =
               -dayProduct.openInterestShortUsd;
-            acc.data[timestamp][`Long ${mappedGroupKey}`] =
+            acc.data[timestamp][`Long ${groupKey}`] =
               dayProduct.openInterestLongUsd;
           } else {
-            acc.data[timestamp][`Short ${mappedGroupKey}`] -=
+            acc.data[timestamp][`Short ${groupKey}`] -=
               dayProduct.openInterestShortUsd;
-            acc.data[timestamp][`Long ${mappedGroupKey}`] +=
+            acc.data[timestamp][`Long ${groupKey}`] +=
               dayProduct.openInterestLongUsd;
           }
           acc.data[timestamp]["Net Cumulative"] +=
@@ -103,6 +91,8 @@ export function OpenInterest({}: OpenInterestProps) {
         acc.cumulative +=
           dayProduct.openInterestLongUsd - dayProduct.openInterestShortUsd;
 
+        acc.allKeys.add(groupKey);
+
         return acc;
       },
       {
@@ -111,43 +101,84 @@ export function OpenInterest({}: OpenInterestProps) {
           Record<string, number> & { timestamp: number }
         >,
         cumulative: 0,
+        allKeys: new Set<string>(),
       }
     );
 
     const values = Object.values(dataMap.data).map((item) => {
-      item["Net Cumulative"] =
-        item["Net Cumulative"] + totalValue - dataMap.cumulative;
-      return item;
+      const longSorted = Object.entries(item)
+        .filter(
+          ([key]) =>
+            key !== "timestamp" &&
+            key !== "Net Cumulative" &&
+            key.includes("Long")
+        )
+        .sort((a, b) => {
+          return b[1] - a[1];
+        });
+      const topLongGroups = longSorted.slice(0, topGroupLimit);
+      const longOthers = longSorted
+        .slice(topGroupLimit)
+        .reduce((acc, [_, value]) => acc + value, 0);
+
+      const shortSorted = Object.entries(item)
+        .filter(
+          ([key]) =>
+            key !== "timestamp" &&
+            key !== "Net Cumulative" &&
+            key.includes("Short")
+        )
+        .sort((a, b) => {
+          return Math.abs(b[1]) - Math.abs(a[1]);
+        });
+      const topShortGroups = shortSorted.slice(0, topGroupLimit);
+      const shortOthers = shortSorted
+        .slice(topGroupLimit)
+        .reduce((acc, [_, value]) => acc + value, 0);
+
+      const newItem = {
+        ...Object.fromEntries(topLongGroups),
+        ...Object.fromEntries(topShortGroups),
+        ["Net Cumulative"]:
+          item["Net Cumulative"] + totalValue - dataMap.cumulative,
+        ["Long Others"]: longOthers,
+        ["Short Others"]: shortOthers,
+        timestamp: item.timestamp,
+      };
+
+      return newItem;
     });
 
     return {
-      topGroups,
+      topGroups: Array.from(dataMap.allKeys).concat("Others"),
       data: values,
     };
   };
 
   return (
     <MixedBarCumLineChart
-      barsMapper={(group, i) => (
-        <>
-          <Bar
-            dataKey={`Short ${group}`}
-            key={`Short ${group}`}
-            stackId={"a"}
-            fill={generateRed(i)}
-            yAxisId="left"
-            isAnimationActive={false}
-          />
-          <Bar
-            dataKey={`Long ${group}`}
-            key={`Long ${group}`}
-            stackId={"a"}
-            fill={generateGreen(i)}
-            yAxisId="left"
-            isAnimationActive={false}
-          />
-        </>
-      )}
+      barsMapper={(group, i) => {
+        return (
+          <>
+            <Bar
+              dataKey={`Short ${group}`}
+              key={`Short ${group}`}
+              stackId={"a"}
+              fill={generateRed(i)}
+              yAxisId="left"
+              isAnimationActive={false}
+            />
+            <Bar
+              dataKey={`Long ${group}`}
+              key={`Long ${group}`}
+              stackId={"a"}
+              fill={generateGreen(i)}
+              yAxisId="left"
+              isAnimationActive={false}
+            />
+          </>
+        );
+      }}
       lineKey="Net Cumulative"
       transformer={transformer}
     />

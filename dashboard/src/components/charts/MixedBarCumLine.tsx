@@ -114,6 +114,7 @@ export function MixedBarCumLineChart({
               />
             );
           }}
+          filterNull={true}
         />
         {transformedData.topGroups.map(barsMapper)}
         {!hideLine && (

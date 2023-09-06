@@ -77,68 +77,68 @@ export const getGroupKey = (params: {
   }
 };
 
-export const getTopGroups = (params: {
-  valueKey: Exclude<
-    keyof StatsRaw["data"]["DayProducts"][number],
-    "_id" | "date"
-  >;
-  data: StatsRaw["data"];
-  groupBy: "pair" | "collateral" | "chain";
-  pairFilter: string[];
-  collateralFilter: string[];
-  chainFilter: string[];
-  topGroupLimit?: number;
-}) => {
-  if (!params.topGroupLimit) {
-    return [
-      ...new Set(
-        params.data.Products.map((product) => {
-          const splitId = product._id.split(":");
+// export const getTopGroups = (params: {
+//   valueKey: Exclude<
+//     keyof StatsRaw["data"]["DayProducts"][number],
+//     "_id" | "date"
+//   >;
+//   data: StatsRaw["data"];
+//   groupBy: "pair" | "collateral" | "chain";
+//   pairFilter: string[];
+//   collateralFilter: string[];
+//   chainFilter: string[];
+//   topGroupLimit?: number;
+// }) => {
+//   if (!params.topGroupLimit) {
+//     return [
+//       ...new Set(
+//         params.data.Products.map((product) => {
+//           const splitId = product._id.split(":");
 
-          const groupKey = getGroupKey({
-            splitId: splitId as [string, string, string],
-            data: params.data,
-            groupBy: params.groupBy,
-          });
+//           const groupKey = getGroupKey({
+//             splitId: splitId as [string, string, string],
+//             data: params.data,
+//             groupBy: params.groupBy,
+//           });
 
-          return groupKey;
-        }),
-      ),
-    ];
-  }
+//           return groupKey;
+//         }),
+//       ),
+//     ];
+//   }
 
-  return Object.entries(params.data.Products
-    .reduce((acc, product) => {
-      const splitId = product._id.split(":");
+//   return Object.entries(params.data.Products
+//     .reduce((acc, product) => {
+//       const splitId = product._id.split(":");
 
-      if (
-        isFiltered({
-          splitId: splitId as [string, string, string],
-          data: params.data,
-          chainFilter: params.chainFilter,
-          collateralFilter: params.collateralFilter,
-          pairFilter: params.pairFilter,
-        })
-      ) {
-        return acc;
-      }
+//       if (
+//         isFiltered({
+//           splitId: splitId as [string, string, string],
+//           data: params.data,
+//           chainFilter: params.chainFilter,
+//           collateralFilter: params.collateralFilter,
+//           pairFilter: params.pairFilter,
+//         })
+//       ) {
+//         return acc;
+//       }
 
-      const groupKey = getGroupKey({
-        splitId: splitId as [string, string, string],
-        data: params.data,
-        groupBy: params.groupBy,
-      });
+//       const groupKey = getGroupKey({
+//         splitId: splitId as [string, string, string],
+//         data: params.data,
+//         groupBy: params.groupBy,
+//       });
 
-      if (!acc[groupKey]) {
-        acc[groupKey] = product[params.valueKey];
-      } else {
-        acc[groupKey] += product[params.valueKey];
-      }
+//       if (!acc[groupKey]) {
+//         acc[groupKey] = product[params.valueKey];
+//       } else {
+//         acc[groupKey] += product[params.valueKey];
+//       }
 
-      return acc;
-    }, {} as Record<string, number>))
-    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-    .slice(0, params.topGroupLimit)
-    .map(([key]) => key)
-    .concat("Others");
-};
+//       return acc;
+//     }, {} as Record<string, number>))
+//     .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+//     .slice(0, params.topGroupLimit)
+//     .map(([key]) => key)
+//     .concat("Others");
+// };
