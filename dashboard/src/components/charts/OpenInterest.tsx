@@ -117,9 +117,6 @@ export function OpenInterest({}: OpenInterestProps) {
           return b[1] - a[1];
         });
       const topLongGroups = longSorted.slice(0, topGroupLimit);
-      const longOthers = longSorted
-        .slice(topGroupLimit)
-        .reduce((acc, [_, value]) => acc + value, 0);
 
       const shortSorted = Object.entries(item)
         .filter(
@@ -132,19 +129,26 @@ export function OpenInterest({}: OpenInterestProps) {
           return Math.abs(b[1]) - Math.abs(a[1]);
         });
       const topShortGroups = shortSorted.slice(0, topGroupLimit);
-      const shortOthers = shortSorted
-        .slice(topGroupLimit)
-        .reduce((acc, [_, value]) => acc + value, 0);
 
       const newItem = {
         ...Object.fromEntries(topLongGroups),
         ...Object.fromEntries(topShortGroups),
         ["Net Cumulative"]:
           item["Net Cumulative"] + totalValue - dataMap.cumulative,
-        ["Long Others"]: longOthers,
-        ["Short Others"]: shortOthers,
         timestamp: item.timestamp,
       };
+
+      if (topGroupLimit) {
+        const longOthers = longSorted
+          .slice(topGroupLimit)
+          .reduce((acc, [_, value]) => acc + value, 0);
+        const shortOthers = shortSorted
+          .slice(topGroupLimit)
+          .reduce((acc, [_, value]) => acc + value, 0);
+
+        longOthers > 0 && (newItem["Long Others"] = longOthers);
+        shortOthers < 0 && (newItem["Short Others"] = shortOthers);
+      }
 
       return newItem;
     });

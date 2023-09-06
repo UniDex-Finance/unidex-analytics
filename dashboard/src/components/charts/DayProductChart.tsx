@@ -94,9 +94,6 @@ export function DayProductChart({ valueKey, formatter }: DayProductChartProps) {
               return b[1] - a[1];
             });
           const topGroups = sorted.slice(0, topGroupLimit);
-          const others = sorted
-            .slice(topGroupLimit)
-            .reduce((acc, [_, value]) => acc + value, 0);
 
           const newItem = {
             ...Object.fromEntries(topGroups),
@@ -104,7 +101,13 @@ export function DayProductChart({ valueKey, formatter }: DayProductChartProps) {
             timestamp: item.timestamp,
           };
 
-          others > 0 && (newItem["Others"] = others);
+          if (topGroupLimit) {
+            const others = sorted
+              .slice(topGroupLimit)
+              .reduce((acc, [_, value]) => acc + value, 0);
+
+            others > 0 && (newItem["Others"] = others);
+          }
 
           return newItem;
         });
