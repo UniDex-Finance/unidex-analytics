@@ -5,6 +5,8 @@
  * 3. Return data
  */
 
+import { addDays, subDays } from "date-fns";
+
 export const GRAPHQL_ENDPOINT =
   "https://data.staging.arkiver.net/robolabs/unidex/graphql" as const;
 
@@ -48,9 +50,9 @@ export const buildQuery = (params: { from: number; to: number }) => {
   };
 };
 
-export const getStats = async () => {
-  const to = Math.floor(Date.now() / 1000);
-  const from = to - 30 * 24 * 60 * 60;
+export const getStats = async (params: { from: Date; to: Date }) => {
+  const to = params.to.getTime() / 1000;
+  const from = params.from.getTime() / 1000;
 
   const query = buildQuery({ from, to });
 

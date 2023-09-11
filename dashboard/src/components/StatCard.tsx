@@ -13,7 +13,7 @@ export interface StatCardProps {
 }
 
 export function StatCard({ title, valueKey, formatter }: StatCardProps) {
-  const { data, isLoading } = useContext(DataContext);
+  const { data, isLoading, isCurrent } = useContext(DataContext);
   const [value, setValue] = useState("...");
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export function StatCard({ title, valueKey, formatter }: StatCardProps) {
       return;
     }
 
-    const rawValue = data.Products.reduce(
+    const rawValue = (isCurrent ? data.Products : data.DayProducts).reduce(
       (acc, product) => acc + product[valueKey],
       0
     );

@@ -3,6 +3,8 @@ import { MixedBarCumLineChart } from "./MixedBarCumLine";
 import type { StatsRaw } from "@/queries/stats";
 import { Bar } from "recharts";
 import { generateColor } from "@/utils/colors";
+import { useContext } from "react";
+import { DataContext } from "../ChartsContainer";
 
 export interface DayProductChartProps {
   valueKey: Exclude<
@@ -22,10 +24,11 @@ export function DayProductChart({ valueKey, formatter }: DayProductChartProps) {
         groupBy,
         pairFilter,
       }) => {
-        const totalValue = data.Products.reduce(
-          (acc, product) => acc + product[valueKey],
-          0
-        );
+        const { isCurrent } = useContext(DataContext);
+
+        const totalValue = (
+          isCurrent ? data.Products : data.DayProducts
+        ).reduce((acc, product) => acc + product[valueKey], 0);
 
         const topGroupLimit =
           groupBy === "pair" ? 8 : groupBy === "collateral" ? 4 : undefined;
@@ -99,7 +102,7 @@ export function DayProductChart({ valueKey, formatter }: DayProductChartProps) {
             ...Object.fromEntries(topGroups),
             Cumulative: item.Cumulative + totalValue - dataMap.cumulative,
             timestamp: item.timestamp,
-          };
+          } as Record<string, number> & { timestamp: number };
 
           if (topGroupLimit) {
             const others = sorted

@@ -6,6 +6,10 @@ import { ChartWrapper } from "./charts/Wrapper";
 import { OpenInterest } from "./charts/OpenInterest";
 import { DayProductChart } from "./charts/DayProductChart";
 import { StatCard } from "./StatCard";
+import { DatePickerWithRange } from "./ui/date-range-picker";
+import type { DateRange } from "react-day-picker";
+import { addDays, subDays } from "date-fns";
+import { cn } from "@/utils/cn";
 
 export const DataContext = createContext<{
   data: StatsRaw["data"] | null;
@@ -13,12 +17,16 @@ export const DataContext = createContext<{
   allChains: string[];
   allCollaterals: string[];
   allPairs: string[];
+  date: DateRange | undefined;
+  isCurrent: boolean;
 }>({
   data: null,
   isLoading: true,
   allChains: [],
   allCollaterals: [],
   allPairs: [],
+  date: undefined,
+  isCurrent: true,
 });
 
 function VolumeChart() {
@@ -83,6 +91,11 @@ function OpenInterestChart() {
 export const ChartsContainer = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [data, setData] = useState<StatsRaw["data"] | null>(null);
+  const [date, setDate] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date(),
+  });
+  const [isCurrent, setIsCurrent] = useState(true);
 
   const { allChains, allCollaterals, allPairs } = useMemo(() => {
     if (!data)
@@ -118,29 +131,64 @@ export const ChartsContainer = () => {
   }, [data]);
 
   useEffect(() => {
-    getStats()
+    if (!date) return;
+    if (!date.from || !date.to) return;
+    setIsLoading(true);
+    getStats({ from: date.from, to: date.to })
       .then((data) => {
         setData(data);
       })
       .finally(() => {
         setIsLoading(false);
       });
-  }, []);
+
+    if (Date.now() - date.to.getTime() > 86400) {
+      setIsCurrent(false);
+    }
+  }, [date]);
 
   return (
     <DataContext.Provider
-      value={{ allChains, allCollaterals, allPairs, data, isLoading }}
+      value={{
+        allChains,
+        allCollaterals,
+        allPairs,
+        data,
+        isLoading,
+        date,
+        isCurrent,
+      }}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col lg:flex-row gap-4 items-center justify-stretch">
-          <StatCard title="All-Time Volume" valueKey="cumulativeVolumeUsd" />
-          <StatCard title="Unique Users" valueKey="usersCount" />
-          <StatCard title="All-Time Fees" valueKey="cumulativeFeesUsd" />
+        <DatePickerWithRange
+          date={date}
+          setDate={setDate}
+          className={cn(
+            "self-end outline outline-1 outline-slate-700 bg-opacity-10 bg-slate-500 rounded",
+            {
+              ["animate-pulse"]: isLoading,
+              ["bg-opacity-20"]: isLoading,
+            }
+          )}
+        />
+        <div className="flex flex-col lg:flex-row gap-4 items-stretch justify-stretch">
           <StatCard
-            title="All-Time Liquidations"
+            title={isCurrent ? "All-Time Volume" : "Total Volume"}
+            valueKey="cumulativeVolumeUsd"
+          />
+          <StatCard title={"Unique Users"} valueKey="usersCount" />
+          <StatCard
+            title={isCurrent ? "All-Time Fees" : "Total Fees"}
+            valueKey="cumulativeFeesUsd"
+          />
+          <StatCard
+            title={isCurrent ? "All-Time Liquidations" : "Total Liquidations"}
             valueKey="cumulativeLiquidationsUsd"
           />
-          <StatCard title="All-Time Traders' PnL" valueKey="cumulativePnlUsd" />
+          <StatCard
+            title={isCurrent ? "All-Time Traders' PnL" : "Total Traders' PnL"}
+            valueKey="cumulativePnlUsd"
+          />
         </div>
         <div className="grid md:grid-cols-2 gap-4">
           <VolumeChart />

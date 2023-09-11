@@ -19,17 +19,17 @@ export default new Manifest("unidex")
     TokenInfo,
     HourPrice,
     User,
-		Order
+    Order,
   ])
   .addChain("arbitrum", (chain) =>
     chain
       .addContract(createTradingContractConfig(sources.arbitrum)))
   .addChain("optimism", (chain) =>
     chain
-      .setOptions({ rpcUrl: "https://rpc.ankr.com/optimism" })
       .addContract(createTradingContractConfig(sources.optimism)))
   .addChain("fantom", (chain) =>
     chain
+			.setOptions({ rpcUrl: "https://nd-375-098-671.p2pify.com/d6011476a0f8e1fd52a5b45b128f39be" })
       .addContract(createTradingContractConfig(sources.fantom)))
   .addChain(
     "zksync",

@@ -5,6 +5,8 @@ import {
   MixedBarCumLineChart,
   type MixedBarCumLineChartProps,
 } from "./MixedBarCumLine";
+import { useContext } from "react";
+import { DataContext } from "../ChartsContainer";
 
 export interface OpenInterestProps {}
 
@@ -16,7 +18,9 @@ export function OpenInterest({}: OpenInterestProps) {
     groupBy,
     pairFilter,
   }) => {
-    const totalValue = data.Products.reduce(
+    const { isCurrent } = useContext(DataContext);
+
+    const totalValue = (isCurrent ? data.Products : data.DayProducts).reduce(
       (acc, product) =>
         acc + product.openInterestLongUsd - product.openInterestShortUsd,
       0
@@ -24,16 +28,6 @@ export function OpenInterest({}: OpenInterestProps) {
 
     const topGroupLimit =
       groupBy === "pair" ? 4 : groupBy === "collateral" ? 4 : undefined;
-
-    // const topGroups = getTopGroups({
-    //   chainFilter,
-    //   collateralFilter,
-    //   data,
-    //   groupBy,
-    //   pairFilter,
-    //   valueKey: "openInterestUsd",
-    //   topGroupLimit,
-    // });
 
     const dataMap = data.DayProducts.reduce(
       (acc, dayProduct) => {
@@ -136,7 +130,7 @@ export function OpenInterest({}: OpenInterestProps) {
         ["Net Cumulative"]:
           item["Net Cumulative"] + totalValue - dataMap.cumulative,
         timestamp: item.timestamp,
-      };
+      } as Record<string, number> & { timestamp: number };
 
       if (topGroupLimit) {
         const longOthers = longSorted
