@@ -64,6 +64,7 @@ export const onClosePosition: EventHandlerFor<
         currency,
         timestamp,
         store: ctx.store,
+        logger: ctx.logger,
       }),
     ]);
 

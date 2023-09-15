@@ -29,7 +29,10 @@ export default new Manifest("unidex")
       .addContract(createTradingContractConfig(sources.optimism)))
   .addChain("fantom", (chain) =>
     chain
-			.setOptions({ rpcUrl: "https://nd-375-098-671.p2pify.com/d6011476a0f8e1fd52a5b45b128f39be" })
+      .setOptions({
+        rpcUrl:
+          "https://nd-375-098-671.p2pify.com/d6011476a0f8e1fd52a5b45b128f39be",
+      })
       .addContract(createTradingContractConfig(sources.fantom)))
   .addChain(
     "zksync",
@@ -43,6 +46,13 @@ export default new Manifest("unidex")
     (chain) =>
       chain.setOptions({ rpcUrl: "https://mainnet.base.org" }).addContract(
         createTradingContractConfig(sources.base),
+      ),
+  )
+  .addChain(
+    "gnosis",
+    (chain) =>
+      chain.setOptions({ rpcUrl: "https://rpc.ankr.com/gnosis" }).addContract(
+        createTradingContractConfig(sources.gnosis),
       ),
   )
   .build();

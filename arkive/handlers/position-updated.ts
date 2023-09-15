@@ -31,6 +31,7 @@ export const onPositionUpdated: EventHandlerFor<
         chainId: chainId as keyof typeof chainIdToCoingeckoId,
         timestamp,
         store: ctx.store,
+        logger: ctx.logger,
       }),
       getPosition({
         key,

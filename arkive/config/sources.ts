@@ -16,4 +16,7 @@ export const sources = {
     "0x7419694a09C21FC4D75f461d348520F3E8A506F6": 2111666n,
     "0x91b75ca80Eb7EcaF367145DaC16cbe97223DE16E": 3139899n,
   },
+  gnosis: {
+    "0xEeBFDC7B498f14EA5640FFdeDA4eE3F3A4cD3545": 29708543n,
+  },
 } as const;

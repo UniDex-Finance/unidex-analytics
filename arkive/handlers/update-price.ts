@@ -36,6 +36,7 @@ export const updatePrice: BlockHandler = async (ctx) => {
         chainId: parseInt(chainId) as keyof typeof chainIdToCoingeckoId,
         from,
         to,
+        logger: ctx.logger,
       });
       return prices;
     }
@@ -47,6 +48,7 @@ export const updatePrice: BlockHandler = async (ctx) => {
       chainId: parseInt(chainId) as keyof typeof chainIdToCoingeckoId,
       from: latestPrice.hourTimestamp,
       to: Number(currentBlockHour + 3600n), // current block hour rounded up
+      logger: ctx.logger,
     });
 
     return prices.map((price) =>

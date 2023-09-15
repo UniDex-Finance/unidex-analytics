@@ -5,7 +5,7 @@ import {
 import { TokenInfo } from "../entities/token-info.ts";
 import {
   array,
-  logger,
+  BlockHandler,
   number,
   object,
   safeParse,
@@ -21,6 +21,7 @@ export const fetchPrices = async (params: {
   chainId: keyof typeof chainIdToCoingeckoId;
   from: number;
   to: number;
+  logger: Parameters<BlockHandler>[0]["logger"];
 }) => {
   const { currency, chainId, from, to } = params;
 
@@ -29,6 +30,7 @@ export const fetchPrices = async (params: {
     currency,
     from,
     to,
+    logger: params.logger,
   });
 
   return prices;
@@ -39,10 +41,12 @@ export const fetchPricesFromCoingecko = async (params: {
   currency: string;
   from: number;
   to: number;
+  logger: Parameters<BlockHandler>[0]["logger"];
 }) => {
   const tokenInfo = await fetchTokenInfo({
     chainId: params.chainId,
     currency: params.currency,
+    logger: params.logger,
   });
 
   if (!tokenInfo) return [];
@@ -54,16 +58,22 @@ export const fetchPricesFromCoingecko = async (params: {
       }`;
     const priceRes = await fetch(url);
     if (!priceRes.ok) {
-      logger("arkiver").error(`${priceRes.status}: ${priceRes.statusText}`);
-      throw new Error("Failed to fetch prices from coingecko");
+      params.logger.error(
+        `Failed to fetch prices from coingecko ${priceRes.status}: ${priceRes.statusText}`,
+      );
+      return [];
     }
     const priceDataParseRes = safeParse(
       coingeckoPriceSchema,
       await priceRes.json(),
     );
     if (!priceDataParseRes.success) {
-      logger("arkiver").error(JSON.stringify(priceDataParseRes.error, null, 2));
-      throw new Error("Failed to parse prices from coingecko");
+      params.logger.error(
+        `Failed to parse price data from coingecko ${
+          JSON.stringify(priceDataParseRes.error, null, 2)
+        }`,
+      );
+      return [];
     }
     const priceData = priceDataParseRes.data;
     const averagePrices = priceData.data.attributes.ohlcv_list.map(
@@ -92,6 +102,7 @@ export const fetchPricesFromCoingecko = async (params: {
 const fetchTokenInfo = async (params: {
   chainId: keyof typeof chainIdToCoingeckoId;
   currency: string;
+  logger: Parameters<BlockHandler>[0]["logger"];
 }) => {
   let tokenInfo = await TokenInfo.findOne({
     chainId: params.chainId,
@@ -111,18 +122,22 @@ const fetchTokenInfo = async (params: {
       `https://api.geckoterminal.com/api/v2/networks/${coingeckoId}/tokens/${mappedCurrency}?include=top_pools`,
     );
     if (!tokenRes.ok) {
-      throw new Error(`Failed to fetch token from coingecko: ${tokenRes}`);
+      params.logger.error(
+        `Failed to fetch token from coingecko: ${tokenRes.status} ${tokenRes.statusText}`,
+      );
+      return null;
     }
     const tokenParseRes = safeParse(
       coingeckoTokenSchema,
       await tokenRes.json(),
     );
     if (!tokenParseRes.success) {
-      throw new Error(
+      params.logger.error(
         `Failed to parse token from coingecko: ${
           JSON.stringify(tokenParseRes.error)
         }`,
       );
+      return null;
     }
     const token = tokenParseRes.data;
     const pool = token.included.find((i) =>
@@ -155,6 +170,7 @@ export const getPrice = async (params: {
   chainId: keyof typeof chainIdToCoingeckoId;
   timestamp: number;
   store: Store;
+  logger: Parameters<BlockHandler>[0]["logger"];
 }) => {
   const hourTimestamp = params.timestamp - (params.timestamp % 3600);
 
@@ -192,7 +208,7 @@ export const getPrice = async (params: {
       if (hourTimestamp >= nowHour) {
         const closestDiff = Math.abs(closest.hourTimestamp - hourTimestamp);
         if (closestDiff > 3600) {
-          logger("arkiver").info(
+          params.logger.info(
             `Price not found for ${params.currency} on ${params.chainId} at ${hourTimestamp} and ${hourTimestamp} is more than ${nowHour}`,
           );
           return null;
@@ -212,10 +228,11 @@ export const getPrice = async (params: {
     currency: params.currency,
     from: hourTimestamp,
     to: (Date.now() / 1000) - ((Date.now() / 1000) % 3600),
+    logger: params.logger,
   });
 
   if (prices.length === 0) {
-    logger("arkiver").error(
+    params.logger.error(
       `No prices returned for ${params.currency} on ${params.chainId} from coingecko at ${hourTimestamp}`,
     );
     return null;
@@ -232,7 +249,7 @@ export const getPrice = async (params: {
       })
     ));
   } catch (e) {
-    logger("arkiver").error(e);
+    params.logger.error(e);
   }
 
   let newPrice = prices.find((price) => price.timestamp === hourTimestamp)
