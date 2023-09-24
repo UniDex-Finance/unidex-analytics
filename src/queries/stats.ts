@@ -8,7 +8,7 @@
 import { addDays, subDays } from "date-fns";
 
 export const GRAPHQL_ENDPOINT =
-  "https://data.staging.arkiver.net/robolabs/unidex/graphql" as const;
+  "https://arkiver.moltennetwork.com/graphql" as const;
 
 export const buildQuery = (params: { from: number; to: number }) => {
   return {
