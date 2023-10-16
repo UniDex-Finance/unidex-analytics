@@ -55,7 +55,7 @@ function MarginChart() {
 
 function PnlChart() {
   return (
-    <ChartWrapper title="Traders' PnL" defaultChains={["42161"]}>
+    <ChartWrapper title="Traders' PnL">
       <DayProductChart valueKey="cumulativePnlUsd" />
     </ChartWrapper>
   );
