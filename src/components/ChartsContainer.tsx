@@ -10,6 +10,7 @@ import { DatePickerWithRange } from "./ui/date-range-picker";
 import type { DateRange } from "react-day-picker";
 import { addDays, subDays } from "date-fns";
 import { cn } from "@/utils/cn";
+import { APRStatCard } from './APRCard';
 
 export const DataContext = createContext<{
   data: StatsRaw["data"] | null;
@@ -130,6 +131,25 @@ export const ChartsContainer = () => {
     };
   }, [data]);
 
+  const [aprValue, setAprValue] = useState("");
+
+  useEffect(() => {
+    // Function to fetch APR from the API
+    const fetchAPR = async () => {
+      try {
+        const response = await fetch("https://pool.unidexapi.com/pools");
+        const apiData = await response.json();
+        const apr = apiData.unidexTokenStats?.APR || "N/A";
+        setAprValue(apr); // Directly setting the APR value
+      } catch (error) {
+        console.error("Error fetching APR:", error);
+        setAprValue("Error");
+      }
+    };
+
+    fetchAPR();
+  }, []);
+
   useEffect(() => {
     if (!date) return;
     if (!date.from || !date.to) return;
@@ -172,6 +192,8 @@ export const ChartsContainer = () => {
           )}
         />
         <div className="flex flex-col lg:flex-row gap-4 items-stretch justify-stretch">
+        <APRStatCard title={"UNIDX 30D APR"} apr={aprValue} />
+
           <StatCard
             title={isCurrent ? "All-Time Volume" : "Total Volume"}
             valueKey="cumulativeVolumeUsd"
@@ -190,6 +212,7 @@ export const ChartsContainer = () => {
             valueKey="cumulativePnlUsd"
           />
         </div>
+
         <div className="grid md:grid-cols-2 gap-4">
           <VolumeChart />
           <FeesChart />
