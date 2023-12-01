@@ -5,6 +5,8 @@ export const CHAIN_NAMES = {
   "324": "ZkSync",
   "8453": "Base",
   "42161": "Arbitrum",
+  "100": "Gnosis",
+  "9001": "Evmos",
 } as Record<string, string>;
 
 export const getChainName = (chainId: string) => {
