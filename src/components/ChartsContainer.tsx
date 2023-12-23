@@ -83,7 +83,7 @@ function LiquidationsChart() {
 
 function OpenInterestChart() {
   return (
-    <ChartWrapper title="Open Interest" fullWidth>
+    <ChartWrapper title="Open Interest">
       <OpenInterest />
     </ChartWrapper>
   );
