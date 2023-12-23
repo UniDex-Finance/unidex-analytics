@@ -40,7 +40,7 @@ function VolumeChart() {
 
 function FeesChart() {
   return (
-    <ChartWrapper title="Fees">
+    <ChartWrapper title="Fees" defaultGroupBy="chain">
       <DayProductChart valueKey="cumulativeFeesUsd" />
     </ChartWrapper>
   );
@@ -56,7 +56,7 @@ function MarginChart() {
 
 function PnlChart() {
   return (
-    <ChartWrapper title="Traders' PnL">
+<ChartWrapper title="Traders' PnL" defaultGroupBy="chain">
       <DayProductChart valueKey="cumulativePnlUsd" />
     </ChartWrapper>
   );
@@ -64,7 +64,7 @@ function PnlChart() {
 
 function TradesChart() {
   return (
-    <ChartWrapper title="Trades">
+    <ChartWrapper title="Trades" defaultGroupBy="chain">
       <DayProductChart
         valueKey="tradeCount"
         formatter={new Intl.NumberFormat("en-US", { notation: "compact" })}
