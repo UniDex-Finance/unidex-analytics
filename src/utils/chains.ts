@@ -7,6 +7,7 @@ export const CHAIN_NAMES = {
   "42161": "Arbitrum",
   "100": "Gnosis",
   "9001": "Evmos",
+  "1088": "Metis",
 } as Record<string, string>;
 
 export const getChainName = (chainId: string) => {
