@@ -8,6 +8,7 @@ export const CHAIN_NAMES = {
   "100": "Gnosis",
   "9001": "Evmos",
   "1088": "Metis",
+  "360": "Molten",
 } as Record<string, string>;
 
 export const getChainName = (chainId: string) => {
